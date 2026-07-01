@@ -76,58 +76,52 @@ const parseResponse = async (response) => {
   }
 };
 
-export async function request(path, options = {}) {
-  const {
-    method = 'GET',
-    body,
-    params,
-    headers: customHeaders = {},
-    auth = true,
-    ...restOptions
-  } = options;
-
+const request = async (endpoint, options = {}) => {
   const token = tokenStorage.getToken();
-  const formData = isFormDataBody(body);
 
   const headers = {
-    ...(formData ? {} : { 'Content-Type': 'application/json' }),
-    ...customHeaders,
+    ...(options.headers || {}),
   };
 
-  if (auth && token) {
+  const isFormData = isFormDataBody(options.body);
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(buildUrl(path, params), {
-    method,
+  const config = {
+    method: options.method || 'GET',
     headers,
-    body: hasBody(body)
-      ? formData || typeof body === 'string'
-        ? body
-        : JSON.stringify(body)
-      : undefined,
-    ...restOptions,
-  });
+  };
 
+  if (hasBody(options.body)) {
+    config.body = isFormData ? options.body : JSON.stringify(options.body);
+  }
+
+  const response = await fetch(buildUrl(endpoint, options.params), config);
   const data = await parseResponse(response);
 
   if (!response.ok) {
     const message =
       data?.message ||
       data?.error ||
+      data?.data?.message ||
       data?.errors?.[0]?.message ||
       `Request failed with status ${response.status}`;
 
-    const error = new Error(message);
-    error.status = response.status;
-    error.data = data;
-
-    throw error;
+    throw new Error(message);
   }
 
-  return data;
-}
+  if (data?.success === false) {
+    throw new Error(data.message || 'Request failed.');
+  }
 
+  return data?.data || data;
+};
 const normalizeStatsResponse = (data = {}) => {
   const stats = data.stats || data.analytics || data;
 

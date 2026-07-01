@@ -558,11 +558,23 @@ const useStore = create((set, get) => ({
     }
   },
 
+<<<<<<< HEAD
   login: async (email, password) => {
+=======
+    login: async (email, password) => {
+>>>>>>> 7f8c0f2 (register/login bug fixing)
     try {
       set({ authLoading: true, apiError: '' });
 
       const data = await api.login(email, password);
+<<<<<<< HEAD
+=======
+
+      if (!data?.token || !data?.user) {
+        throw new Error(data?.message || 'Invalid email or password.');
+      }
+
+>>>>>>> 7f8c0f2 (register/login bug fixing)
       const user = mapUser(data.user);
 
       tokenStorage.setToken(data.token);
@@ -574,7 +586,15 @@ const useStore = create((set, get) => ({
         authLoading: false,
       });
 
+<<<<<<< HEAD
       await get().fetchDashboardData();
+=======
+      try {
+        await get().fetchDashboardData();
+      } catch {
+        // Dashboard data fail korleo login fail dhora hobe na
+      }
+>>>>>>> 7f8c0f2 (register/login bug fixing)
 
       return {
         success: true,
@@ -582,24 +602,51 @@ const useStore = create((set, get) => ({
         message: data.message || 'Login successful.',
       };
     } catch (error) {
+<<<<<<< HEAD
       set({
         authLoading: false,
         apiError: error.message || 'Login failed.',
+=======
+      tokenStorage.removeToken();
+
+      const message = error.message || 'Invalid email or password.';
+
+      set({
+        currentUser: null,
+        isAuthenticated: false,
+        authLoading: false,
+        apiError: message,
+>>>>>>> 7f8c0f2 (register/login bug fixing)
       });
 
       return {
         success: false,
+<<<<<<< HEAD
         message: error.message || 'Login failed.',
+=======
+        message,
+>>>>>>> 7f8c0f2 (register/login bug fixing)
       };
     }
   },
 
+<<<<<<< HEAD
   register: async (payload) => {
+=======
+    register: async (payload) => {
+>>>>>>> 7f8c0f2 (register/login bug fixing)
     try {
       set({ authLoading: true, apiError: '' });
 
       const data = await api.register(payload);
 
+<<<<<<< HEAD
+=======
+      if (data?.success === false) {
+        throw new Error(data.message || 'Registration failed.');
+      }
+
+>>>>>>> 7f8c0f2 (register/login bug fixing)
       set({ authLoading: false });
 
       return {
@@ -607,14 +654,28 @@ const useStore = create((set, get) => ({
         message: data.message || 'Registration successful.',
       };
     } catch (error) {
+<<<<<<< HEAD
       set({
         authLoading: false,
         apiError: error.message || 'Registration failed.',
+=======
+      const message =
+        error?.message ||
+        'BRTA information did not match. Please check your name, phone, and NID.';
+
+      set({
+        authLoading: false,
+        apiError: message,
+>>>>>>> 7f8c0f2 (register/login bug fixing)
       });
 
       return {
         success: false,
+<<<<<<< HEAD
         message: error.message || 'Registration failed.',
+=======
+        message,
+>>>>>>> 7f8c0f2 (register/login bug fixing)
       };
     }
   },
@@ -805,7 +866,7 @@ const useStore = create((set, get) => ({
                 assignments: normalizeArray(data, 'assignments').map(mapAssignment),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
 
         tasks.push(
@@ -816,7 +877,7 @@ const useStore = create((set, get) => ({
                 verificationLogs: normalizeArray(data, 'logs').map(mapLog),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
 
         tasks.push(
@@ -827,7 +888,7 @@ const useStore = create((set, get) => ({
                 activityLogs: normalizeArray(data, 'activityLogs').map(mapLog),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
       }
 
@@ -856,7 +917,7 @@ const useStore = create((set, get) => ({
                 assignments: normalizeArray(data, 'assignments').map(mapAssignment),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
       }
 
@@ -885,7 +946,7 @@ const useStore = create((set, get) => ({
                 violations: normalizeArray(data, 'violations').map(mapViolation),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
       }
 
