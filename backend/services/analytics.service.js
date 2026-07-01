@@ -10,6 +10,21 @@ const BrtaDrivingLicense = require("../models/BrtaDrivingLicense");
 const BrtaOwner = require("../models/BrtaOwner");
 const BrtaDriver = require("../models/BrtaDriver");
 
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 const getAnalyticsSummary = async () => {
   const [
     totalUsers,
@@ -19,9 +34,19 @@ const getAnalyticsSummary = async () => {
     totalOwners,
 
     totalVehicles,
+    activeVehicles,
+    suspendedVehicles,
+    blacklistedVehicles,
+
     totalLicenses,
+    validLicenses,
+    expiredLicenses,
 
     totalBrtaVehicles,
+    activeBrtaVehicles,
+    suspendedBrtaVehicles,
+    blacklistedBrtaVehicles,
+
     totalBrtaLicenses,
     totalBrtaOwners,
     totalBrtaDrivers,
@@ -30,7 +55,7 @@ const getAnalyticsSummary = async () => {
     pendingCases,
     approvedCases,
     dismissedCases,
-    paidCases,
+    paidStatusCases,
 
     unpaidPaymentCases,
     paidPaymentCases,
@@ -47,9 +72,19 @@ const getAnalyticsSummary = async () => {
     User.countDocuments({ role: "owner" }),
 
     Vehicle.countDocuments(),
+    Vehicle.countDocuments({ status: "active" }),
+    Vehicle.countDocuments({ status: "suspended" }),
+    Vehicle.countDocuments({ status: "blacklisted" }),
+
     DrivingLicense.countDocuments(),
+    DrivingLicense.countDocuments({ status: { $in: ["valid", "active"] } }),
+    DrivingLicense.countDocuments({ status: "expired" }),
 
     BrtaVehicle.countDocuments(),
+    BrtaVehicle.countDocuments({ status: "active" }),
+    BrtaVehicle.countDocuments({ status: "suspended" }),
+    BrtaVehicle.countDocuments({ status: "blacklisted" }),
+
     BrtaDrivingLicense.countDocuments(),
     BrtaOwner.countDocuments(),
     BrtaDriver.countDocuments(),
@@ -62,7 +97,7 @@ const getAnalyticsSummary = async () => {
 
     Violation.countDocuments({
       paymentStatus: { $in: ["unpaid", "pending", "partial"] },
-      status: { $ne: "dismissed" },
+      status: { $nin: ["dismissed", "paid"] },
     }),
 
     Violation.countDocuments({
@@ -116,22 +151,70 @@ const getAnalyticsSummary = async () => {
   const violationStatusBreakdown = await Violation.aggregate([
     {
       $group: {
-        _id: "$status",
+        _id: { $ifNull: ["$status", "unknown"] },
         count: { $sum: 1 },
       },
     },
+    { $sort: { count: -1 } },
   ]);
 
   const violationTypeBreakdown = await Violation.aggregate([
     {
+      $project: {
+        fineAmount: 1,
+        label: {
+          $ifNull: [
+            "$violationCode",
+            {
+              $ifNull: [
+                "$ruleCode",
+                {
+                  $ifNull: ["$violationType", "Other"],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+    {
       $group: {
-        _id: "$violationType",
+        _id: "$label",
         count: { $sum: 1 },
         totalFine: { $sum: "$fineAmount" },
       },
     },
-    { $sort: { count: -1 } },
+    { $sort: { count: -1, totalFine: -1 } },
     { $limit: 10 },
+    {
+      $project: {
+        _id: 0,
+        label: "$_id",
+        value: "$count",
+        count: "$count",
+        totalFine: "$totalFine",
+      },
+    },
+  ]);
+
+  const monthlyCaseTrend = await Violation.aggregate([
+    {
+      $group: {
+        _id: { $month: "$createdAt" },
+        value: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+    {
+      $project: {
+        _id: 0,
+        monthNumber: "$_id",
+        label: {
+          $arrayElemAt: [MONTH_LABELS, { $subtract: ["$_id", 1] }],
+        },
+        value: 1,
+      },
+    },
   ]);
 
   const recentViolations = await Violation.find({})
@@ -164,9 +247,22 @@ const getAnalyticsSummary = async () => {
     totalOwners,
 
     totalVehicles,
+    activeVehicles,
+    suspendedVehicles,
+    blacklistedVehicles,
+
     totalLicenses,
+    validLicenses,
+    expiredLicenses,
 
     totalBrtaVehicles,
+    activeBrtaVehicles,
+    suspendedBrtaVehicles,
+    blacklistedBrtaVehicles,
+
+    totalVehicleRecords: Math.max(totalVehicles, totalBrtaVehicles),
+    activeVehicleRecords: Math.max(activeVehicles, activeBrtaVehicles),
+
     totalBrtaLicenses,
     totalBrtaOwners,
     totalBrtaDrivers,
@@ -175,7 +271,8 @@ const getAnalyticsSummary = async () => {
     pendingCases,
     approvedCases,
     dismissedCases,
-    paidCases,
+    paidCases: paidPaymentCases,
+    paidStatusCases,
 
     unpaidCases: unpaidPaymentCases,
     paidPaymentCases,
@@ -191,6 +288,7 @@ const getAnalyticsSummary = async () => {
 
     violationStatusBreakdown,
     violationTypeBreakdown,
+    monthlyCaseTrend,
 
     recentViolations,
     recentVerificationLogs,
