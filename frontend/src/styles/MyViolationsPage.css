@@ -1,0 +1,237 @@
+.my-violations-wrapper {
+  width: 100%;
+}
+
+.my-violations-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.my-violations-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.my-violations-alert,
+.my-violations-summary-card,
+.my-violations-filter-card,
+.my-violations-list-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.my-violations-summary-card:hover,
+.my-violations-filter-card:hover,
+.my-violations-list-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.my-violations-summary-card:hover {
+  transform: translateY(-1px);
+}
+
+.my-violations-summary-icon,
+.my-violations-info-icon {
+  flex-shrink: 0;
+}
+
+.my-violations-search-wrap {
+  min-width: 280px;
+}
+
+.my-violations-search-icon {
+  pointer-events: none;
+}
+
+.my-violations-search-input {
+  min-width: 0;
+}
+
+.my-violations-filter-button,
+.my-violations-details-button,
+.my-violations-pay-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.my-violations-filter-button:active,
+.my-violations-details-button:active,
+.my-violations-pay-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.my-violations-item {
+  transition: background-color 0.15s ease;
+}
+
+.my-violations-case-badge,
+.my-violations-payment-badge {
+  white-space: nowrap;
+}
+
+.my-violations-info-block {
+  min-width: 0;
+  transition: background-color 0.2s ease;
+}
+
+.my-violations-info-block:hover {
+  background: rgb(249 250 251);
+}
+
+.my-violations-details-box {
+  animation: my-violations-fade-up 0.2s ease both;
+}
+
+.my-violations-detail-item {
+  min-width: 0;
+}
+
+.my-violations-empty-state {
+  border: 1px dashed rgb(229 231 235);
+  margin: 20px;
+  border-radius: 18px;
+}
+
+.my-violations-footer-count {
+  user-select: none;
+}
+
+@keyframes my-violations-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .my-violations-search-wrap {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .my-violations-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-violations-filter-row {
+    align-items: stretch;
+  }
+
+  .my-violations-item-top {
+    flex-direction: column;
+  }
+
+  .my-violations-fine-box {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .my-violations-header {
+    padding: 20px;
+  }
+
+  .my-violations-filter-buttons {
+    align-items: flex-start;
+  }
+
+  .my-violations-filter-button {
+    flex: 1 1 auto;
+  }
+
+  .my-violations-actions {
+    align-items: stretch;
+  }
+
+  .my-violations-details-button,
+  .my-violations-pay-button {
+    width: 100%;
+  }
+}
+
+.my-violations-summary-card {
+  position: relative;
+  min-height: 112px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.my-violations-summary-card::after {
+  content: "";
+  position: absolute;
+  right: -28px;
+  top: -28px;
+  width: 82px;
+  height: 82px;
+  border-radius: 999px;
+  background: rgba(26, 115, 232, 0.045);
+  pointer-events: none;
+}
+
+.my-violations-summary-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.my-violations-summary-content {
+  position: relative;
+  z-index: 1;
+}
+
+.my-violations-summary-value {
+  font-size: 1.55rem;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.my-violations-summary-label {
+  margin-top: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.my-violations-summary-note {
+  margin-top: 3px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .my-violations-summary-card {
+    min-height: 104px;
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .my-violations-summary-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .my-violations-summary-value {
+    font-size: 1.35rem;
+  }
+}

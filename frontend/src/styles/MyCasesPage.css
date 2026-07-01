@@ -1,0 +1,143 @@
+.my-cases-wrapper {
+  width: 100%;
+}
+
+.my-cases-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.my-cases-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.my-cases-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.my-cases-create-button,
+.my-cases-filter-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.my-cases-create-button:active,
+.my-cases-filter-button:active {
+  transform: scale(0.98);
+}
+
+.my-cases-summary-card,
+.my-cases-filter-card,
+.my-cases-list-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.my-cases-summary-card:hover,
+.my-cases-filter-card:hover,
+.my-cases-list-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.my-cases-summary-card:hover {
+  transform: translateY(-1px);
+}
+
+.my-cases-summary-icon,
+.my-cases-info-icon {
+  flex-shrink: 0;
+}
+
+.my-cases-search-wrap {
+  min-width: 280px;
+}
+
+.my-cases-search-icon {
+  pointer-events: none;
+}
+
+.my-cases-search-input {
+  min-width: 0;
+}
+
+.my-cases-item {
+  transition: background-color 0.15s ease;
+}
+
+.my-cases-status-badge {
+  white-space: nowrap;
+}
+
+.my-cases-info-block {
+  min-width: 0;
+  transition: background-color 0.2s ease;
+}
+
+.my-cases-info-block:hover {
+  background: rgb(249 250 251);
+}
+
+.my-cases-description-box {
+  border: 1px solid rgb(243 244 246);
+}
+
+.my-cases-empty-state {
+  border: 1px dashed rgb(229 231 235);
+  margin: 20px;
+  border-radius: 18px;
+}
+
+.my-cases-footer-count {
+  user-select: none;
+}
+
+@media (max-width: 1024px) {
+  .my-cases-search-wrap {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .my-cases-header-content {
+    flex-direction: column;
+  }
+
+  .my-cases-create-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .my-cases-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-cases-filter-row {
+    align-items: stretch;
+  }
+
+  .my-cases-item-top {
+    flex-direction: column;
+  }
+
+  .my-cases-fine-box {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .my-cases-filter-buttons {
+    align-items: flex-start;
+  }
+
+  .my-cases-filter-button {
+    flex: 1 1 auto;
+  }
+}

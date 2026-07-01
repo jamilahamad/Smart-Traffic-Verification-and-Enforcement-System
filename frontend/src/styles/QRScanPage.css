@@ -1,0 +1,350 @@
+.qr-scan-wrapper {
+  width: 100%;
+}
+
+.qr-scan-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.qr-scan-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.qr-scan-camera-card,
+.qr-scan-control-card,
+.qr-scan-result-card,
+.qr-scan-error-card,
+.qr-scan-loading-card,
+.qr-scan-detected-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.qr-scan-camera-card:hover,
+.qr-scan-control-card:hover,
+.qr-scan-result-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.qr-scan-camera-button,
+.qr-scan-simulate-button,
+.qr-scan-submit-button,
+.qr-scan-sample-button,
+.qr-scan-case-button,
+.qr-scan-case-button-mobile {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.qr-scan-camera-button:active,
+.qr-scan-simulate-button:active:not(:disabled),
+.qr-scan-submit-button:active:not(:disabled),
+.qr-scan-sample-button:active,
+.qr-scan-case-button:active,
+.qr-scan-case-button-mobile:active {
+  transform: scale(0.98);
+}
+
+.qr-scan-preview {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-scan-camera-view,
+.qr-scan-placeholder {
+  width: 100%;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-scan-corners {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-scan-corner {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-color: rgb(34 211 238);
+}
+
+.qr-scan-corner-top-left {
+  top: 0;
+  left: 0;
+  border-top: 4px solid;
+  border-left: 4px solid;
+  border-radius: 14px 0 0 0;
+}
+
+.qr-scan-corner-top-right {
+  top: 0;
+  right: 0;
+  border-top: 4px solid;
+  border-right: 4px solid;
+  border-radius: 0 14px 0 0;
+}
+
+.qr-scan-corner-bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 4px solid;
+  border-left: 4px solid;
+  border-radius: 0 0 0 14px;
+}
+
+.qr-scan-corner-bottom-right {
+  right: 0;
+  bottom: 0;
+  border-right: 4px solid;
+  border-bottom: 4px solid;
+  border-radius: 0 0 14px 0;
+}
+
+.qr-scan-line {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(34 211 238);
+  box-shadow: 0 0 18px rgb(34 211 238 / 80%);
+  animation: qr-scan-line-move 1.4s ease-in-out infinite;
+}
+
+.qr-scan-input-icon {
+  pointer-events: none;
+}
+
+.qr-scan-input {
+  min-width: 0;
+}
+
+.qr-scan-sample-icon,
+.qr-scan-info-icon {
+  flex-shrink: 0;
+}
+
+.qr-scan-result-card,
+.qr-scan-error-card,
+.qr-scan-loading-card,
+.qr-scan-detected-card,
+.qr-scan-status-panel article {
+  animation: qr-scan-fade-up 0.22s ease both;
+}
+
+.qr-scan-status-badge {
+  white-space: nowrap;
+}
+
+.qr-scan-info-block {
+  min-width: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.qr-scan-info-block:hover {
+  background: rgb(249 250 251);
+  border-color: rgb(219 234 254);
+}
+
+.qr-scan-issue-item {
+  line-height: 1.5;
+}
+
+.qr-scan-help-text {
+  user-select: none;
+}
+
+/* Live camera video preview */
+.qr-scan-video-wrap {
+  position: relative;
+  width: min(100%, 760px);
+  min-height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgb(2 6 23);
+}
+
+.qr-scan-video {
+  width: 100%;
+  min-height: 420px;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.qr-scan-reader {
+  width: 100%;
+  min-height: 420px;
+  border: 0 !important;
+  overflow: hidden;
+}
+
+.qr-scan-reader>div {
+  border: 0 !important;
+}
+
+.qr-scan-reader video {
+  width: 100% !important;
+  min-height: 420px !important;
+  object-fit: cover !important;
+  border-radius: 20px;
+}
+
+.qr-scan-reader canvas {
+  display: none !important;
+}
+
+.qr-scan-frame-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.qr-scan-frame-overlay .qr-scan-corner {
+  width: 56px;
+  height: 56px;
+}
+
+.qr-scan-frame-overlay .qr-scan-corner-top-left {
+  top: 80px;
+  left: calc(50% - 150px);
+}
+
+.qr-scan-frame-overlay .qr-scan-corner-top-right {
+  top: 80px;
+  right: calc(50% - 150px);
+}
+
+.qr-scan-frame-overlay .qr-scan-corner-bottom-left {
+  bottom: 80px;
+  left: calc(50% - 150px);
+}
+
+.qr-scan-frame-overlay .qr-scan-corner-bottom-right {
+  right: calc(50% - 150px);
+  bottom: 80px;
+}
+
+.qr-scan-frame-overlay .qr-scan-line {
+  left: calc(50% - 132px);
+  right: calc(50% - 132px);
+}
+
+@keyframes qr-scan-line-move {
+  0% {
+    top: 26px;
+  }
+
+  50% {
+    top: 208px;
+  }
+
+  100% {
+    top: 26px;
+  }
+}
+
+@keyframes qr-scan-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .qr-scan-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .qr-scan-header {
+    padding: 20px;
+  }
+
+  .qr-scan-camera-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .qr-scan-camera-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .qr-scan-preview,
+  .qr-scan-camera-view,
+  .qr-scan-placeholder {
+    min-height: 340px;
+  }
+
+  .qr-scan-corners {
+    width: 210px;
+    height: 210px;
+  }
+
+  .qr-scan-result-banner {
+    align-items: flex-start;
+  }
+
+  .qr-scan-video-wrap,
+  .qr-scan-video {
+    min-height: 340px;
+  }
+
+  .qr-scan-reader,
+  .qr-scan-reader video {
+    min-height: 340px !important;
+  }
+
+  .qr-scan-frame-overlay .qr-scan-corner-top-left {
+    top: 70px;
+    left: calc(50% - 125px);
+  }
+
+  .qr-scan-frame-overlay .qr-scan-corner-top-right {
+    top: 70px;
+    right: calc(50% - 125px);
+  }
+
+  .qr-scan-frame-overlay .qr-scan-corner-bottom-left {
+    bottom: 70px;
+    left: calc(50% - 125px);
+  }
+
+  .qr-scan-frame-overlay .qr-scan-corner-bottom-right {
+    right: calc(50% - 125px);
+    bottom: 70px;
+  }
+
+  .qr-scan-frame-overlay .qr-scan-line {
+    left: calc(50% - 108px);
+    right: calc(50% - 108px);
+  }
+}

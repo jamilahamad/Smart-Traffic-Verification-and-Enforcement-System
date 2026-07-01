@@ -1,0 +1,229 @@
+.brta-photo-page {
+  animation: brta-photo-fade 0.25s ease;
+}
+
+.brta-photo-hero-icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brta-photo-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.brta-photo-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 45px rgba(15, 76, 129, 0.08);
+}
+
+.brta-photo-type-button {
+  min-height: 46px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.16s ease;
+}
+
+.brta-photo-type-button:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #0f4c81;
+}
+
+.brta-photo-type-button.active {
+  border-color: #0f4c81;
+  background: #0f4c81;
+  color: #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 76, 129, 0.18);
+}
+
+.brta-photo-input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  transition: all 0.16s ease;
+}
+
+.brta-photo-input:focus {
+  border-color: #0f4c81;
+  box-shadow: 0 0 0 4px rgba(15, 76, 129, 0.1);
+}
+
+.brta-photo-dropzone {
+  min-height: 145px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 18px;
+  background: #f8fafc;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+}
+
+.brta-photo-dropzone:hover {
+  border-color: #0f4c81;
+  background: #eff6ff;
+}
+
+.brta-photo-alert {
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.brta-photo-alert.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.brta-photo-alert.success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.brta-photo-submit,
+.brta-photo-reset {
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.16s ease;
+}
+
+.brta-photo-submit {
+  flex: 1;
+  background: #0f4c81;
+  color: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 76, 129, 0.2);
+}
+
+.brta-photo-submit:hover:not(:disabled) {
+  background: #0b3a63;
+  transform: translateY(-1px);
+}
+
+.brta-photo-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.brta-photo-reset {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #4b5563;
+}
+
+.brta-photo-reset:hover:not(:disabled) {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.brta-photo-preview,
+.brta-photo-preview-empty {
+  width: 150px;
+  height: 150px;
+  border-radius: 28px;
+}
+
+.brta-photo-preview {
+  object-fit: cover;
+  border: 4px solid #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 76, 129, 0.16);
+}
+
+.brta-photo-preview-empty {
+  background: #e0f2fe;
+  color: #0f4c81;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brta-photo-result-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 10px;
+}
+
+.brta-photo-result-row span {
+  color: #6b7280;
+}
+
+.brta-photo-result-row strong {
+  color: #111827;
+  text-align: right;
+}
+
+.brta-photo-link {
+  margin-top: 8px;
+  display: inline-flex;
+  color: #0f4c81;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+@keyframes brta-photo-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .brta-photo-hero {
+    padding: 20px;
+  }
+
+  .brta-photo-hero-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+  }
+
+  .brta-photo-preview,
+  .brta-photo-preview-empty {
+    width: 126px;
+    height: 126px;
+    border-radius: 22px;
+  }
+}

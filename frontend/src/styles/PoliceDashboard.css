@@ -1,0 +1,140 @@
+.police-dashboard-wrapper {
+  width: 100%;
+}
+
+.police-dashboard-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.police-dashboard-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.police-dashboard-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.police-dashboard-refresh-button {
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.police-dashboard-refresh-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.police-dashboard-shield {
+  flex-shrink: 0;
+}
+
+.police-dashboard-stat-card,
+.police-dashboard-summary-card,
+.police-dashboard-list-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.police-dashboard-stat-card:hover,
+.police-dashboard-summary-card:hover,
+.police-dashboard-list-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.police-dashboard-stat-card:hover,
+.police-dashboard-summary-card:hover {
+  transform: translateY(-1px);
+}
+
+.police-dashboard-stat-icon,
+.police-dashboard-summary-icon,
+.police-dashboard-activity-icon {
+  flex-shrink: 0;
+}
+
+.police-dashboard-action-card {
+  min-height: 152px;
+}
+
+.police-dashboard-list-card {
+  min-height: 280px;
+}
+
+.police-dashboard-case-item,
+.police-dashboard-activity-item {
+  transition: background-color 0.15s ease;
+}
+
+.police-dashboard-case-dot {
+  box-shadow: 0 0 0 3px rgb(255 255 255);
+}
+
+.police-dashboard-status-badge {
+  white-space: nowrap;
+}
+
+.police-dashboard-empty-state {
+  border: 1px dashed rgb(229 231 235);
+  margin: 18px;
+  border-radius: 18px;
+}
+
+@media (max-width: 768px) {
+  .police-dashboard-header-content {
+    flex-direction: column;
+  }
+
+  .police-dashboard-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .police-dashboard-refresh-button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .police-dashboard-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .police-dashboard-case-item {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .police-dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .police-dashboard-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .police-dashboard-shield {
+    display: none;
+  }
+
+  .police-dashboard-user-meta {
+    gap: 8px;
+  }
+
+  .police-dashboard-case-item {
+    flex-direction: column;
+  }
+
+  .police-dashboard-case-right {
+    width: 100%;
+    text-align: left;
+    padding-left: 20px;
+  }
+}

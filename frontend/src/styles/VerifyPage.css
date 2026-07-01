@@ -1,0 +1,159 @@
+.verify-page-wrapper {
+  width: 100%;
+}
+
+.verify-page-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.verify-page-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.verify-search-card,
+.verify-info-card,
+.verify-error-card,
+.verify-loading-card,
+.verify-result-banner,
+.verify-driver-auth-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.verify-search-card:hover,
+.verify-info-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.verify-mode-button,
+.verify-submit-button,
+.verify-create-case-button,
+.verify-create-case-button-mobile {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.verify-mode-button:active,
+.verify-submit-button:active:not(:disabled),
+.verify-create-case-button:active,
+.verify-create-case-button-mobile:active {
+  transform: scale(0.98);
+}
+
+.verify-input-icon {
+  pointer-events: none;
+}
+
+.verify-search-input {
+  min-width: 0;
+}
+
+.verify-submit-button {
+  min-width: 132px;
+}
+
+.verify-result-area {
+  animation: verify-fade-up 0.22s ease both;
+}
+
+.verify-result-banner {
+  animation: verify-fade-up 0.22s ease both;
+}
+
+.verify-info-card-head svg {
+  flex-shrink: 0;
+}
+
+.verify-status-badge {
+  white-space: nowrap;
+}
+
+.verify-document-row {
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+
+.verify-document-row:hover {
+  transform: translateY(-1px);
+}
+
+.verify-driver-auth-icon {
+  flex-shrink: 0;
+}
+
+.verify-authorized-driver {
+  transition: background-color 0.15s ease;
+}
+
+.verify-authorized-driver:hover {
+  background: rgb(249 250 251);
+}
+
+.verify-issue-item {
+  line-height: 1.5;
+}
+
+@keyframes verify-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .verify-search-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .verify-submit-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .verify-page-header {
+    padding: 20px;
+  }
+
+  .verify-mode-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .verify-result-banner {
+    align-items: flex-start;
+  }
+
+  .verify-document-row {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .verify-authorized-driver {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.verify-example-chip,
+.verify-empty-card {
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.verify-example-chip:active {
+  transform: scale(0.98);
+}
+
+.verify-empty-card {
+  animation: verify-fade-up 0.22s ease both;
+}
