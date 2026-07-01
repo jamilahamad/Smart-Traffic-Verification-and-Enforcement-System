@@ -1,0 +1,72 @@
+.all-cases-wrapper {
+  width: 100%;
+}
+
+.all-cases-filter-card,
+.all-cases-table-card {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.all-cases-filter-card:hover,
+.all-cases-table-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.all-cases-search-input {
+  min-width: 260px;
+}
+
+.all-cases-filter-button,
+.all-cases-icon-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.all-cases-filter-button:active,
+.all-cases-icon-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.all-cases-table-scroll {
+  width: 100%;
+}
+
+.all-cases-table {
+  min-width: 1050px;
+}
+
+.all-cases-table th {
+  white-space: nowrap;
+}
+
+.all-cases-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.all-cases-status-badge,
+.all-cases-payment-badge {
+  white-space: nowrap;
+}
+
+.all-cases-action-group {
+  min-width: 82px;
+}
+
+.all-cases-empty-state {
+  border: 1px dashed rgb(229 231 235);
+  margin: 20px;
+  border-radius: 18px;
+}
+
+@media (max-width: 640px) {
+  .all-cases-filter-row {
+    gap: 14px;
+  }
+
+  .all-cases-search-input {
+    min-width: 100%;
+  }
+
+  .all-cases-filter-actions {
+    align-items: flex-start;
+  }
+}
