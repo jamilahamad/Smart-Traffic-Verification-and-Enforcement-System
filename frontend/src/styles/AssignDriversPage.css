@@ -1,0 +1,297 @@
+.assign-drivers-wrapper {
+  width: 100%;
+}
+
+.assign-drivers-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.assign-drivers-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.assign-drivers-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.assign-drivers-refresh-button,
+.assign-drivers-submit-button,
+.assign-drivers-filter-button,
+.assign-drivers-action-button,
+.assign-drivers-remove-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.assign-drivers-refresh-button:active:not(:disabled),
+.assign-drivers-submit-button:active:not(:disabled),
+.assign-drivers-filter-button:active,
+.assign-drivers-action-button:active,
+.assign-drivers-remove-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.assign-drivers-summary-card,
+.assign-drivers-form-card,
+.assign-drivers-filter-card,
+.assign-drivers-vehicle-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.assign-drivers-summary-card:hover,
+.assign-drivers-form-card:hover,
+.assign-drivers-filter-card:hover,
+.assign-drivers-vehicle-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.assign-drivers-summary-card:hover,
+.assign-drivers-vehicle-card:hover {
+  transform: translateY(-1px);
+}
+
+.assign-drivers-summary-icon,
+.assign-drivers-driver-avatar {
+  flex-shrink: 0;
+}
+
+.assign-drivers-alert,
+.assign-drivers-list-box {
+  animation: assign-drivers-fade-up 0.22s ease both;
+}
+
+.assign-drivers-input {
+  min-width: 0;
+}
+
+.assign-drivers-search-wrap {
+  min-width: 280px;
+}
+
+.assign-drivers-search-icon {
+  pointer-events: none;
+}
+
+.assign-drivers-search-input {
+  min-width: 0;
+}
+
+.assign-drivers-count-badge,
+.assign-drivers-status-badge,
+.assign-drivers-small-meta {
+  white-space: nowrap;
+}
+
+.assign-drivers-driver-card {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.assign-drivers-driver-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.assign-drivers-note {
+  line-height: 1.5;
+}
+
+.assign-drivers-empty-state {
+  min-height: 240px;
+}
+
+.assign-drivers-footer-count {
+  user-select: none;
+}
+
+@keyframes assign-drivers-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .assign-drivers-search-wrap {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .assign-drivers-header-content {
+    flex-direction: column;
+  }
+
+  .assign-drivers-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .assign-drivers-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assign-drivers-filter-row {
+    align-items: stretch;
+  }
+
+  .assign-drivers-actions-row {
+    flex-direction: column;
+  }
+
+  .assign-drivers-driver-row {
+    flex-direction: column;
+  }
+
+  .assign-drivers-remove-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .assign-drivers-header {
+    padding: 20px;
+  }
+
+  .assign-drivers-filter-buttons {
+    align-items: flex-start;
+  }
+
+  .assign-drivers-filter-button {
+    flex: 1 1 auto;
+  }
+
+  .assign-drivers-driver-left {
+    flex-direction: column;
+  }
+}
+
+.assign-drivers-summary-card {
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 10px 28px rgba(15, 76, 129, 0.04);
+}
+
+.assign-drivers-summary-card:hover {
+  box-shadow: 0 16px 38px rgba(15, 76, 129, 0.08);
+}
+
+.assign-drivers-summary-value {
+  line-height: 1;
+  margin: 0;
+}
+
+.assign-drivers-summary-label {
+  line-height: 1.2;
+  margin: 0;
+}
+
+.assign-drivers-form-card button,
+.assign-drivers-empty-state button {
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Driver search / request workflow */
+.assign-drivers-driver-search-row {
+  align-items: stretch;
+}
+
+.assign-drivers-driver-search-row input {
+  min-width: 0;
+}
+
+.assign-drivers-driver-search-row button {
+  white-space: nowrap;
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.assign-drivers-driver-search-row button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.assign-drivers-driver-result {
+  position: relative;
+  overflow: hidden;
+  animation: assign-drivers-fade-up 0.22s ease both;
+  box-shadow: 0 10px 28px rgba(15, 76, 129, 0.06);
+}
+
+.assign-drivers-driver-result::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, #0f4c81, #1a73e8);
+}
+
+.assign-drivers-driver-result h3,
+.assign-drivers-driver-result p,
+.assign-drivers-driver-result span {
+  position: relative;
+  z-index: 1;
+}
+
+.assign-drivers-driver-result:hover {
+  border-color: rgb(147 197 253);
+  box-shadow: 0 14px 36px rgba(15, 76, 129, 0.1);
+}
+
+.assign-drivers-driver-result span {
+  white-space: nowrap;
+}
+
+.assign-drivers-form-group .assign-drivers-driver-result {
+  grid-column: 1 / -1;
+}
+
+.assign-drivers-submit-button {
+  min-height: 48px;
+}
+
+.assign-drivers-submit-button:disabled {
+  cursor: not-allowed;
+}
+
+.assign-drivers-summary-card:nth-child(3) {
+  border-color: rgb(254 249 195);
+}
+
+.assign-drivers-summary-card:nth-child(4) {
+  border-color: rgb(255 237 213);
+}
+
+@media (max-width: 768px) {
+  .assign-drivers-driver-search-row {
+    flex-direction: column;
+  }
+
+  .assign-drivers-driver-search-row button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .assign-drivers-driver-result .flex {
+    flex-direction: column;
+  }
+
+  .assign-drivers-driver-result span {
+    width: fit-content;
+  }
+}
