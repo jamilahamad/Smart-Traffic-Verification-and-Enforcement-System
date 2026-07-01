@@ -1,0 +1,212 @@
+.profile-page-wrapper {
+  width: 100%;
+}
+
+.profile-page-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-page-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.profile-page-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-page-refresh-button,
+.profile-page-edit-button,
+.profile-page-cancel-button,
+.profile-page-save-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-page-refresh-button:active:not(:disabled),
+.profile-page-edit-button:active,
+.profile-page-cancel-button:active,
+.profile-page-save-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.profile-page-alert,
+.profile-page-hero-card,
+.profile-page-form-card,
+.profile-page-info-card,
+.profile-page-role-card,
+.profile-page-security-card,
+.profile-empty-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-page-hero-card:hover,
+.profile-page-form-card:hover,
+.profile-page-info-card:hover,
+.profile-page-role-card:hover,
+.profile-page-security-card:hover,
+.profile-empty-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.profile-page-hero-top {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-page-hero-top::after {
+  content: '';
+  position: absolute;
+  right: -46px;
+  bottom: -46px;
+  width: 160px;
+  height: 160px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.profile-page-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-page-avatar {
+  flex-shrink: 0;
+}
+
+.profile-page-status-badge {
+  white-space: nowrap;
+}
+
+.profile-page-mini-info,
+.profile-page-info-item,
+.profile-page-security-tile {
+  min-width: 0;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.profile-page-mini-info:hover,
+.profile-page-info-item:hover,
+.profile-page-security-tile:hover {
+  background: rgb(249 250 251);
+  transform: translateY(-1px);
+}
+
+.profile-page-info-icon,
+.profile-page-security-icon {
+  flex-shrink: 0;
+}
+
+.profile-page-role-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-page-role-box::after {
+  content: '';
+  position: absolute;
+  right: -34px;
+  bottom: -34px;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.profile-page-input {
+  min-width: 0;
+}
+
+.profile-page-alert,
+.profile-page-form-card {
+  animation: profile-page-fade-up 0.22s ease both;
+}
+
+@keyframes profile-page-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-page-header-content,
+  .profile-page-header-actions,
+  .profile-page-form-head {
+    flex-direction: column;
+  }
+
+  .profile-page-header-actions {
+    width: 100%;
+  }
+
+  .profile-page-refresh-button,
+  .profile-page-edit-button,
+  .profile-page-cancel-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-page-hero-content {
+    flex-direction: column;
+  }
+
+  .profile-page-hero-bottom,
+  .profile-page-security-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .profile-page-header {
+    padding: 20px;
+  }
+
+  .profile-page-hero-top,
+  .profile-page-hero-bottom,
+  .profile-page-form-card,
+  .profile-page-info-card,
+  .profile-page-role-card,
+  .profile-page-security-card {
+    padding: 20px;
+  }
+
+  .profile-page-avatar {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+.profile-page-permissions-box,
+.profile-page-audit-item {
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.profile-page-permissions-box:hover,
+.profile-page-audit-item:hover {
+  border-color: rgb(191 219 254);
+  transform: translateY(-1px);
+}
+
+.profile-page-permission-item {
+  line-height: 1.45;
+}
+
+.profile-page-audit-grid {
+  min-width: 0;
+}
