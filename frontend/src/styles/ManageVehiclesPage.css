@@ -1,0 +1,267 @@
+.manage-vehicles-wrapper {
+  width: 100%;
+}
+
+.manage-vehicles-header {
+  width: 100%;
+}
+
+.manage-vehicles-source-note {
+  box-shadow: 0 10px 22px rgb(15 76 129 / 8%);
+}
+
+.manage-vehicles-error {
+  animation: manageVehiclesSoftRise 0.2s ease-out;
+}
+
+.manage-vehicles-filter-card,
+.manage-vehicles-empty-card,
+.manage-vehicles-card,
+.manage-vehicles-stat-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.manage-vehicles-filter-card:hover,
+.manage-vehicles-empty-card:hover,
+.manage-vehicles-card:hover,
+.manage-vehicles-stat-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.manage-vehicles-stat-card:hover,
+.manage-vehicles-card:hover {
+  box-shadow: 0 18px 34px rgb(15 76 129 / 8%);
+  transform: translateY(-1px);
+}
+
+.manage-vehicles-stat-icon {
+  background: rgb(239 246 255);
+  color: rgb(15 76 129);
+}
+
+.manage-vehicles-stat-card-green .manage-vehicles-stat-icon {
+  background: rgb(220 252 231);
+  color: rgb(21 128 61);
+}
+
+.manage-vehicles-stat-card-orange .manage-vehicles-stat-icon {
+  background: rgb(255 237 213);
+  color: rgb(234 88 12);
+}
+
+.manage-vehicles-stat-card-red .manage-vehicles-stat-icon {
+  background: rgb(254 226 226);
+  color: rgb(185 28 28);
+}
+
+.manage-vehicles-stat-card-indigo .manage-vehicles-stat-icon {
+  background: rgb(224 231 255);
+  color: rgb(67 56 202);
+}
+
+.manage-vehicles-search-wrap {
+  min-width: 260px;
+}
+
+.manage-vehicles-search-icon {
+  pointer-events: none;
+}
+
+.manage-vehicles-search-input {
+  min-width: 0;
+}
+
+.manage-vehicles-search-input:focus {
+  border-color: rgb(147 197 253);
+}
+
+.manage-vehicles-filter-button,
+.manage-vehicles-details-button,
+.manage-vehicles-icon-button,
+.manage-vehicles-confirm-button,
+.manage-vehicles-cancel-button,
+.manage-vehicles-confirm-close {
+  transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.manage-vehicles-filter-button:active,
+.manage-vehicles-details-button:active,
+.manage-vehicles-icon-button:active:not(:disabled),
+.manage-vehicles-confirm-button:active:not(:disabled),
+.manage-vehicles-cancel-button:active {
+  transform: scale(0.96);
+}
+
+.manage-vehicles-grid {
+  align-items: start;
+}
+
+.manage-vehicles-card {
+  min-height: auto;
+}
+
+.manage-vehicles-card-head {
+  min-height: 24px;
+}
+
+.manage-vehicles-plate-block {
+  max-width: calc(100% - 80px);
+}
+
+.manage-vehicles-status-badge,
+.manage-vehicles-source-badge,
+.manage-vehicles-qr-badge {
+  white-space: nowrap;
+}
+
+.manage-vehicles-source-badge {
+  border: 1px solid rgb(191 219 254);
+}
+
+.manage-vehicles-qr-badge {
+  border: 1px solid rgb(229 231 235);
+}
+
+.manage-vehicles-badge-row {
+  min-height: 26px;
+}
+
+.manage-vehicles-safety-track {
+  min-width: 80px;
+}
+
+.manage-vehicles-safety-fill {
+  transition: width 0.3s ease;
+}
+
+.manage-vehicles-mini-stats {
+  animation: manageVehiclesSoftRise 0.18s ease-out;
+}
+
+.manage-vehicles-mini-stat {
+  border: 1px solid rgb(243 244 246);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.manage-vehicles-mini-stat:hover {
+  border-color: rgb(219 234 254);
+  background: rgb(248 250 252);
+}
+
+.manage-vehicles-actions {
+  min-height: 38px;
+}
+
+.manage-vehicles-detail-box {
+  animation: manageVehiclesSoftRise 0.18s ease-out;
+}
+
+.manage-vehicles-detail-section {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.manage-vehicles-detail-section:hover {
+  border-color: rgb(219 234 254);
+  background: rgb(255 255 255 / 85%);
+}
+
+.manage-vehicles-detail-row {
+  border-bottom: 1px dashed rgb(229 231 235);
+}
+
+.manage-vehicles-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.manage-vehicles-modal-backdrop {
+  animation: manageVehiclesBackdropFade 0.18s ease-out;
+}
+
+.manage-vehicles-confirm-modal {
+  position: relative;
+  animation: manageVehiclesModalRise 0.2s ease-out;
+}
+
+.manage-vehicles-confirm-content {
+  line-height: 1.55;
+}
+
+@keyframes manageVehiclesSoftRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes manageVehiclesBackdropFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes manageVehiclesModalRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1024px) {
+  .manage-vehicles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .manage-vehicles-source-note {
+    width: fit-content;
+  }
+
+  .manage-vehicles-search-wrap {
+    min-width: 100%;
+  }
+
+  .manage-vehicles-status-filters {
+    align-items: flex-start;
+  }
+
+  .manage-vehicles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manage-vehicles-card {
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .manage-vehicles-stats-grid {
+    gap: 12px;
+  }
+
+  .manage-vehicles-filter-row {
+    gap: 14px;
+  }
+
+  .manage-vehicles-confirm-modal {
+    border-radius: 22px;
+  }
+
+  .manage-vehicles-mini-stats {
+    grid-template-columns: 1fr;
+  }
+}
