@@ -1,0 +1,95 @@
+.license-renewals-wrapper {
+  width: 100%;
+}
+
+.license-renewals-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.license-renewals-header::after {
+  content: "";
+  position: absolute;
+  right: -50px;
+  top: -70px;
+  width: 190px;
+  height: 190px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.license-renewals-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.license-renewals-refresh-button,
+.license-renewals-approve-button,
+.license-renewals-reject-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.license-renewals-refresh-button:active,
+.license-renewals-approve-button:active,
+.license-renewals-reject-button:active {
+  transform: scale(0.98);
+}
+
+.license-renewals-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.license-renewals-alert-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.license-renewals-alert-success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.license-renewals-stat-card,
+.license-renewals-item,
+.license-renewals-toolbar,
+.license-renewals-list {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.03);
+}
+
+.license-renewals-item {
+  background: #ffffff;
+}
+
+.license-renewals-item:hover {
+  background: #fbfdff;
+}
+
+.license-renewals-proof-card {
+  min-width: 230px;
+}
+
+.license-renewals-review-panel {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.license-renewals-empty {
+  min-height: 260px;
+}
+
+@media (max-width: 768px) {
+  .license-renewals-proof-card {
+    min-width: 100%;
+  }
+
+  .license-renewals-actions button {
+    width: 100%;
+  }
+}
