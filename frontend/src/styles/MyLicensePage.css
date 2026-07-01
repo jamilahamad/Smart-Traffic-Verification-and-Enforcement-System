@@ -1,0 +1,207 @@
+.my-license-wrapper {
+  width: 100%;
+}
+
+.my-license-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.my-license-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.my-license-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.my-license-refresh-button {
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.my-license-refresh-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.my-license-status-card,
+.my-license-card,
+.my-license-status-tile,
+.my-license-vehicles-card,
+.my-license-owner-card,
+.my-license-empty-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.my-license-card:hover,
+.my-license-status-tile:hover,
+.my-license-vehicles-card:hover,
+.my-license-owner-card:hover,
+.my-license-empty-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.my-license-status-tile:hover {
+  transform: translateY(-1px);
+}
+
+.my-license-status-icon,
+.my-license-card-icon,
+.my-license-tile-icon,
+.my-license-vehicle-icon {
+  flex-shrink: 0;
+}
+
+.my-license-status-badge,
+.my-license-count-badge {
+  white-space: nowrap;
+}
+
+.my-license-card-top {
+  position: relative;
+  overflow: hidden;
+}
+
+.my-license-card-top::after {
+  content: '';
+  position: absolute;
+  right: -44px;
+  bottom: -44px;
+  width: 150px;
+  height: 150px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.my-license-card-brand,
+.my-license-card-number {
+  position: relative;
+  z-index: 1;
+}
+
+.my-license-info-item {
+  min-width: 0;
+}
+
+.my-license-vehicle-item {
+  transition: background-color 0.15s ease;
+}
+
+.my-license-empty-box,
+.my-license-empty-card {
+  border-style: dashed;
+}
+
+.my-license-empty-box {
+  margin: 18px;
+  border-radius: 18px;
+  border: 1px dashed rgb(229 231 235);
+}
+
+@media (max-width: 768px) {
+  .my-license-header-content {
+    flex-direction: column;
+  }
+
+  .my-license-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .my-license-status-content {
+    flex-direction: column;
+  }
+
+  .my-license-expiry-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .my-license-header {
+    padding: 20px;
+  }
+
+  .my-license-card-top,
+  .my-license-card-body {
+    padding: 20px;
+  }
+
+  .my-license-card-brand {
+    flex-direction: column;
+  }
+
+  .my-license-vehicle-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.my-license-renew-button,
+.my-license-modal-actions button {
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.my-license-renew-button:active,
+.my-license-modal-actions button:active {
+  transform: scale(0.98);
+}
+
+.my-license-modal-overlay {
+  animation: my-license-fade 0.15s ease;
+}
+
+.my-license-modal {
+  animation: my-license-pop 0.18s ease;
+}
+
+@keyframes my-license-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes my-license-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .my-license-renewal-action {
+    width: 100%;
+  }
+
+  .my-license-renew-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .my-license-modal-actions {
+    flex-direction: column;
+  }
+
+  .my-license-modal-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
