@@ -1,0 +1,164 @@
+.owner-dashboard-wrapper {
+  width: 100%;
+}
+
+.owner-dashboard-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.owner-dashboard-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.owner-dashboard-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.owner-dashboard-refresh-button,
+.owner-dashboard-summary-card,
+.owner-dashboard-action-card,
+.owner-dashboard-empty-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.owner-dashboard-refresh-button:active:not(:disabled),
+.owner-dashboard-summary-card:active,
+.owner-dashboard-action-card:active,
+.owner-dashboard-empty-button:active {
+  transform: scale(0.98);
+}
+
+.owner-dashboard-summary-card,
+.owner-dashboard-action-card,
+.owner-dashboard-vehicle-card,
+.owner-dashboard-compliance-card,
+.owner-dashboard-violations-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.owner-dashboard-summary-card:hover,
+.owner-dashboard-action-card:hover,
+.owner-dashboard-vehicle-card:hover,
+.owner-dashboard-compliance-card:hover,
+.owner-dashboard-violations-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.owner-dashboard-summary-card:hover,
+.owner-dashboard-action-card:hover {
+  transform: translateY(-1px);
+}
+
+.owner-dashboard-summary-icon {
+  flex-shrink: 0;
+}
+
+.owner-dashboard-status-badge {
+  white-space: nowrap;
+}
+
+.owner-dashboard-vehicle-item,
+.owner-dashboard-violation-item {
+  transition: background-color 0.15s ease;
+}
+
+.owner-dashboard-safety-track {
+  min-width: 80px;
+}
+
+.owner-dashboard-safety-fill {
+  transition: width 0.25s ease;
+}
+
+.owner-dashboard-doc-status {
+  min-width: 0;
+}
+
+.owner-dashboard-compliance-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.owner-dashboard-compliance-box::after {
+  content: '';
+  position: absolute;
+  right: -36px;
+  bottom: -36px;
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.owner-dashboard-compliance-row {
+  transition: background-color 0.2s ease;
+}
+
+.owner-dashboard-compliance-row:hover {
+  background: rgb(249 250 251);
+}
+
+.owner-dashboard-empty-state {
+  border: 1px dashed rgb(229 231 235);
+  margin: 18px;
+  border-radius: 18px;
+}
+
+.owner-dashboard-link-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .owner-dashboard-header-content {
+    flex-direction: column;
+  }
+
+  .owner-dashboard-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .owner-dashboard-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-dashboard-violation-item {
+    flex-direction: column;
+  }
+
+  .owner-dashboard-fine-box {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .owner-dashboard-header {
+    padding: 20px;
+  }
+
+  .owner-dashboard-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .owner-dashboard-vehicle-top {
+    flex-direction: column;
+  }
+
+  .owner-dashboard-doc-grid {
+    grid-template-columns: 1fr;
+  }
+}
