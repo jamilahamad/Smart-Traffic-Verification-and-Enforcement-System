@@ -1,0 +1,252 @@
+.my-vehicles-wrapper {
+  width: 100%;
+}
+
+.my-vehicles-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.my-vehicles-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.my-vehicles-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.my-vehicles-refresh-button,
+.my-vehicles-add-button,
+.my-vehicles-close-button,
+.my-vehicles-filter-button,
+.my-vehicles-details-button,
+.my-vehicles-submit-button,
+.my-vehicles-assign-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.my-vehicles-refresh-button:active:not(:disabled),
+.my-vehicles-add-button:active,
+.my-vehicles-close-button:active,
+.my-vehicles-filter-button:active,
+.my-vehicles-details-button:active,
+.my-vehicles-submit-button:active:not(:disabled),
+.my-vehicles-assign-button:active {
+  transform: scale(0.98);
+}
+
+.my-vehicles-summary-card,
+.my-vehicles-form-card,
+.my-vehicles-filter-card,
+.my-vehicles-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.my-vehicles-summary-card:hover,
+.my-vehicles-form-card:hover,
+.my-vehicles-filter-card:hover,
+.my-vehicles-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.my-vehicles-summary-card:hover,
+.my-vehicles-card:hover {
+  transform: translateY(-1px);
+}
+
+.my-vehicles-summary-icon,
+.my-vehicles-health-icon {
+  flex-shrink: 0;
+}
+
+.my-vehicles-status-badge {
+  white-space: nowrap;
+}
+
+.my-vehicles-alert,
+.my-vehicles-form-card,
+.my-vehicles-details-box {
+  animation: my-vehicles-fade-up 0.22s ease both;
+}
+
+.my-vehicles-input {
+  min-width: 0;
+}
+
+.my-vehicles-search-wrap {
+  min-width: 280px;
+}
+
+.my-vehicles-search-icon {
+  pointer-events: none;
+}
+
+.my-vehicles-search-input {
+  min-width: 0;
+}
+
+.my-vehicles-card {
+  min-width: 0;
+}
+
+.my-vehicles-card-top {
+  position: relative;
+}
+
+.my-vehicles-safety-track {
+  min-width: 80px;
+}
+
+.my-vehicles-safety-fill {
+  transition: width 0.25s ease;
+}
+
+.my-vehicles-mini-info {
+  min-width: 0;
+  transition: background-color 0.2s ease;
+}
+
+.my-vehicles-mini-info:hover {
+  background: rgb(249 250 251);
+}
+
+.my-vehicles-info-item {
+  min-width: 0;
+}
+
+.my-vehicles-document-status {
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+
+.my-vehicles-document-status:hover {
+  transform: translateY(-1px);
+}
+
+.my-vehicles-qr-box {
+  overflow: hidden;
+}
+
+.my-vehicles-empty-state {
+  min-height: 240px;
+}
+
+.my-vehicles-footer-count {
+  user-select: none;
+}
+
+@keyframes my-vehicles-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .my-vehicles-search-wrap {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .my-vehicles-header-content,
+  .my-vehicles-form-head {
+    flex-direction: column;
+  }
+
+  .my-vehicles-header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .my-vehicles-refresh-button,
+  .my-vehicles-add-button,
+  .my-vehicles-close-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .my-vehicles-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-vehicles-filter-row {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .my-vehicles-header {
+    padding: 20px;
+  }
+
+  .my-vehicles-card-head {
+    flex-direction: column;
+  }
+
+  .my-vehicles-mini-grid,
+  .my-vehicles-doc-list {
+    grid-template-columns: 1fr;
+  }
+
+  .my-vehicles-filter-buttons {
+    align-items: flex-start;
+  }
+
+  .my-vehicles-filter-button {
+    flex: 1 1 auto;
+  }
+}
+
+.my-vehicles-summary-card {
+  box-shadow: 0 10px 28px rgba(15, 76, 129, 0.04);
+}
+
+.my-vehicles-summary-card:hover {
+  box-shadow: 0 16px 38px rgba(15, 76, 129, 0.08);
+}
+
+.my-vehicles-empty-state button {
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.my-vehicles-summary-card {
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 10px 28px rgba(15, 76, 129, 0.04);
+}
+
+.my-vehicles-summary-card:hover {
+  box-shadow: 0 16px 38px rgba(15, 76, 129, 0.08);
+}
+
+.my-vehicles-summary-icon {
+  flex-shrink: 0;
+}
+
+.my-vehicles-summary-value {
+  line-height: 1;
+  margin: 0;
+}
+
+.my-vehicles-summary-label {
+  line-height: 1.2;
+  margin: 0;
+}

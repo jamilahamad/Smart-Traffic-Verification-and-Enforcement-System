@@ -1,0 +1,238 @@
+.blacklist-page-wrapper {
+  width: 100%;
+}
+
+.blacklist-page-note {
+  box-shadow: 0 10px 22px rgb(239 68 68 / 8%);
+}
+
+.blacklist-page-error {
+  animation: blacklistSoftRise 0.2s ease-out;
+}
+
+.blacklist-summary-card,
+.blacklist-toolbar-card,
+.blacklist-table-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.blacklist-summary-card:hover,
+.blacklist-toolbar-card:hover,
+.blacklist-table-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.blacklist-summary-card:hover,
+.blacklist-table-card:hover {
+  box-shadow: 0 18px 34px rgb(15 76 129 / 8%);
+  transform: translateY(-1px);
+}
+
+.blacklist-summary-icon {
+  flex-shrink: 0;
+  background: rgb(239 246 255);
+  color: rgb(15 76 129);
+}
+
+.blacklist-summary-card-orange .blacklist-summary-icon {
+  background: rgb(255 237 213);
+  color: rgb(234 88 12);
+}
+
+.blacklist-summary-card-red .blacklist-summary-icon {
+  background: rgb(254 226 226);
+  color: rgb(185 28 28);
+}
+
+.blacklist-summary-card-purple .blacklist-summary-icon {
+  background: rgb(243 232 255);
+  color: rgb(126 34 206);
+}
+
+.blacklist-tab-button,
+.blacklist-status-filter-button,
+.blacklist-icon-button,
+.blacklist-confirm-button,
+.blacklist-cancel-button,
+.blacklist-confirm-close {
+  transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.blacklist-tab-button:active,
+.blacklist-status-filter-button:active,
+.blacklist-icon-button:active:not(:disabled),
+.blacklist-confirm-button:active:not(:disabled),
+.blacklist-cancel-button:active {
+  transform: scale(0.96);
+}
+
+.blacklist-search-wrap {
+  width: 360px;
+  max-width: 100%;
+}
+
+.blacklist-search-icon {
+  pointer-events: none;
+}
+
+.blacklist-search-input {
+  min-width: 0;
+}
+
+.blacklist-search-input:focus {
+  border-color: rgb(147 197 253);
+}
+
+.blacklist-table-scroll {
+  width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(191 219 254) rgb(248 250 252);
+}
+
+.blacklist-table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.blacklist-table-scroll::-webkit-scrollbar-track {
+  background: rgb(248 250 252);
+  border-radius: 999px;
+}
+
+.blacklist-table-scroll::-webkit-scrollbar-thumb {
+  background: rgb(191 219 254);
+  border-radius: 999px;
+}
+
+.blacklist-table {
+  min-width: 880px;
+}
+
+.blacklist-table th {
+  white-space: nowrap;
+}
+
+.blacklist-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.blacklist-status-badge,
+.blacklist-role-badge {
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.blacklist-action-group {
+  min-width: 88px;
+}
+
+.blacklist-empty-state {
+  border: 1px dashed rgb(229 231 235);
+  margin: 20px;
+  border-radius: 18px;
+}
+
+.blacklist-page-count {
+  user-select: none;
+}
+
+.blacklist-scroll-hint {
+  line-height: 1.4;
+}
+
+.blacklist-modal-backdrop {
+  animation: blacklistBackdropFade 0.18s ease-out;
+}
+
+.blacklist-confirm-modal {
+  position: relative;
+  animation: blacklistModalRise 0.2s ease-out;
+}
+
+.blacklist-confirm-content {
+  line-height: 1.55;
+}
+
+@keyframes blacklistSoftRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blacklistBackdropFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes blacklistModalRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (min-width: 768px) {
+  .blacklist-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: inherit;
+  }
+
+  thead .blacklist-sticky-col {
+    z-index: 2;
+  }
+}
+
+@media (max-width: 1024px) {
+  .blacklist-search-wrap {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .blacklist-page-note {
+    width: fit-content;
+  }
+
+  .blacklist-toolbar-row,
+  .blacklist-toolbar-top {
+    gap: 14px;
+  }
+
+  .blacklist-tab-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .blacklist-tabs {
+    width: 100%;
+  }
+
+  .blacklist-status-filter-button {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .blacklist-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .blacklist-confirm-modal {
+    border-radius: 22px;
+  }
+}

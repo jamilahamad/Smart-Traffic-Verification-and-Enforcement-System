@@ -1,0 +1,223 @@
+.driver-dashboard-wrapper {
+  width: 100%;
+}
+
+.driver-dashboard-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.driver-dashboard-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.driver-dashboard-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.driver-dashboard-refresh-button,
+.driver-dashboard-view-button,
+.driver-dashboard-view-button-mobile,
+.driver-dashboard-payment-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.driver-dashboard-refresh-button:active:not(:disabled),
+.driver-dashboard-view-button:active,
+.driver-dashboard-view-button-mobile:active,
+.driver-dashboard-payment-button:active {
+  transform: scale(0.98);
+}
+
+.driver-dashboard-status-card,
+.driver-dashboard-summary-card,
+.driver-dashboard-license-card,
+.driver-dashboard-payment-card,
+.driver-dashboard-list-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.driver-dashboard-status-card:hover,
+.driver-dashboard-summary-card:hover,
+.driver-dashboard-license-card:hover,
+.driver-dashboard-payment-card:hover,
+.driver-dashboard-list-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.driver-dashboard-summary-card:hover {
+  transform: translateY(-1px);
+}
+
+.driver-dashboard-status-icon,
+.driver-dashboard-summary-icon,
+.driver-dashboard-vehicle-icon {
+  flex-shrink: 0;
+}
+
+.driver-dashboard-status-badge,
+.driver-dashboard-case-badge {
+  white-space: nowrap;
+}
+
+.driver-dashboard-fine-box {
+  position: relative;
+  overflow: hidden;
+}
+
+.driver-dashboard-fine-box::after {
+  content: '';
+  position: absolute;
+  right: -34px;
+  bottom: -34px;
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.driver-dashboard-list-card {
+  min-height: 280px;
+}
+
+.driver-dashboard-violation-item,
+.driver-dashboard-vehicle-item {
+  transition: background-color 0.15s ease;
+}
+
+.driver-dashboard-empty-box {
+  border: 1px dashed rgb(229 231 235);
+  margin: 18px;
+  border-radius: 18px;
+}
+
+.driver-dashboard-info-item {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .driver-dashboard-header-content {
+    flex-direction: column;
+  }
+
+  .driver-dashboard-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .driver-dashboard-status-content {
+    align-items: flex-start;
+  }
+
+  .driver-dashboard-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .driver-dashboard-violation-top {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .driver-dashboard-header {
+    padding: 20px;
+  }
+
+  .driver-dashboard-user-meta {
+    gap: 8px;
+  }
+
+  .driver-dashboard-status-content {
+    flex-direction: column;
+  }
+
+  .driver-dashboard-vehicle-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.driver-dashboard-summary-card {
+  position: relative;
+  min-height: 108px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.driver-dashboard-summary-card::after {
+  content: "";
+  position: absolute;
+  right: -28px;
+  top: -28px;
+  width: 82px;
+  height: 82px;
+  border-radius: 999px;
+  background: rgba(26, 115, 232, 0.045);
+  pointer-events: none;
+}
+
+.driver-dashboard-summary-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.driver-dashboard-summary-content {
+  position: relative;
+  z-index: 1;
+}
+
+.driver-dashboard-summary-value {
+  font-size: 1.55rem;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.driver-dashboard-summary-label {
+  margin-top: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.driver-dashboard-summary-note {
+  margin-top: 3px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .driver-dashboard-summary-card {
+    min-height: 102px;
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .driver-dashboard-summary-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .driver-dashboard-summary-value {
+    font-size: 1.35rem;
+  }
+}

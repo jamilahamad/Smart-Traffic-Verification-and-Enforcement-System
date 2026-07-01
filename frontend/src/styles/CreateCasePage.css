@@ -1,0 +1,145 @@
+.create-case-wrapper {
+  width: 100%;
+}
+
+.create-case-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.create-case-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.create-case-card,
+.create-case-alert,
+.create-case-summary {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.create-case-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.create-case-card-head svg {
+  flex-shrink: 0;
+}
+
+.create-case-input-icon {
+  pointer-events: none;
+}
+
+.create-case-input,
+.create-case-textarea {
+  min-width: 0;
+}
+
+.create-case-resolved-card {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.create-case-resolved-card:hover {
+  background: rgb(249 250 251);
+  border-color: rgb(219 234 254);
+}
+
+.create-case-resolved-icon {
+  flex-shrink: 0;
+}
+
+.create-case-status-badge,
+.create-case-summary-chip {
+  white-space: nowrap;
+}
+
+.create-case-auto-button,
+.create-case-submit-button,
+.create-case-violation-option {
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.create-case-auto-button:active,
+.create-case-submit-button:active:not(:disabled),
+.create-case-violation-option:active {
+  transform: scale(0.98);
+}
+
+.create-case-violation-option:hover {
+  box-shadow: 0 8px 20px rgb(15 23 42 / 5%);
+}
+
+.create-case-checkbox {
+  flex-shrink: 0;
+}
+
+.create-case-summary {
+  position: relative;
+  overflow: hidden;
+}
+
+.create-case-summary::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  bottom: -40px;
+  width: 130px;
+  height: 130px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.create-case-summary-grid,
+.create-case-summary-list {
+  position: relative;
+  z-index: 1;
+}
+
+.create-case-alert {
+  animation: create-case-fade-up 0.22s ease both;
+}
+
+@keyframes create-case-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .create-case-violation-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .create-case-auto-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .create-case-header {
+    padding: 20px;
+  }
+
+  .create-case-input-grid,
+  .create-case-resolved-grid,
+  .create-case-violation-grid,
+  .create-case-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,147 @@
+.activity-logs-wrapper {
+  width: 100%;
+}
+
+.activity-logs-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-logs-header::after {
+  content: '';
+  position: absolute;
+  right: -52px;
+  top: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+  pointer-events: none;
+}
+
+.activity-logs-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.activity-logs-refresh-button {
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.activity-logs-refresh-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.activity-logs-summary-card,
+.activity-logs-filter-card,
+.activity-logs-timeline-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.activity-logs-summary-card:hover,
+.activity-logs-filter-card:hover,
+.activity-logs-timeline-card:hover {
+  border-color: rgb(219 234 254);
+}
+
+.activity-logs-summary-card:hover {
+  transform: translateY(-1px);
+}
+
+.activity-logs-summary-icon,
+.activity-logs-icon-box {
+  flex-shrink: 0;
+}
+
+.activity-logs-search-wrap {
+  min-width: 280px;
+}
+
+.activity-logs-search-icon {
+  pointer-events: none;
+}
+
+.activity-logs-search-input {
+  min-width: 0;
+}
+
+.activity-logs-filter-button {
+  transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.activity-logs-filter-button:active {
+  transform: scale(0.96);
+}
+
+.activity-logs-count-badge,
+.activity-logs-type-badge {
+  white-space: nowrap;
+}
+
+.activity-logs-item {
+  transition: background-color 0.15s ease;
+}
+
+.activity-logs-dot {
+  box-shadow: 0 0 0 3px rgb(255 255 255);
+}
+
+.activity-logs-line {
+  min-height: 40px;
+}
+
+.activity-logs-details {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.activity-logs-empty-state {
+  border: 1px dashed rgb(229 231 235);
+  border-radius: 18px;
+}
+
+@media (max-width: 1024px) {
+  .activity-logs-search-wrap {
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .activity-logs-header-content {
+    flex-direction: column;
+  }
+
+  .activity-logs-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .activity-logs-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-logs-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .activity-logs-item {
+    gap: 10px;
+  }
+
+  .activity-logs-icon-box {
+    display: none;
+  }
+
+  .activity-logs-type-filters {
+    align-items: flex-start;
+  }
+
+  .activity-logs-filter-button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
