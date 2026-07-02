@@ -47,7 +47,12 @@ const UserSchema = new mongoose.Schema(
       sparse: true,
     },
 
-    // BRTA identity links
+    address: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     brtaDriverId: {
       type: String,
       trim: true,
@@ -70,7 +75,6 @@ const UserSchema = new mongoose.Schema(
       sparse: true,
     },
 
-    // Profile image stored in Cloudinary, only URL/metadata stored in MongoDB
     avatarUrl: {
       type: String,
       trim: true,
@@ -89,7 +93,6 @@ const UserSchema = new mongoose.Schema(
       default: "default",
     },
 
-    // Police-only fields
     badge: {
       type: String,
       trim: true,

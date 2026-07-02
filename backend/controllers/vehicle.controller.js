@@ -40,6 +40,52 @@ const getExpiryDate = (documentPart) => {
   return documentPart?.expiryDate || null;
 };
 
+const OWNER_VEHICLE_UPDATE_ALLOWED_FIELDS = [];
+
+const OWNER_VEHICLE_PROTECTED_FIELDS = [
+  "registrationNumber",
+  "owner",
+  "vehicleType",
+  "brand",
+  "model",
+  "year",
+  "color",
+  "chassisNumber",
+  "engineNumber",
+  "registrationDate",
+  "registrationExpiry",
+  "fitnessExpiry",
+  "taxTokenExpiry",
+  "insuranceExpiry",
+  "routePermitExpiry",
+  "qrCode",
+  "status",
+  "safetyScore",
+  "complianceScore",
+  "riskLevel",
+];
+
+const pickAllowedOwnerVehicleUpdates = (payload = {}) => {
+  const protectedField = OWNER_VEHICLE_PROTECTED_FIELDS.find((field) =>
+    Object.prototype.hasOwnProperty.call(payload, field)
+  );
+
+  if (protectedField) {
+    throw new AppError(
+      `${protectedField} is an official BRTA vehicle field and cannot be changed by the owner.`,
+      403
+    );
+  }
+
+  return OWNER_VEHICLE_UPDATE_ALLOWED_FIELDS.reduce((updates, field) => {
+    if (Object.prototype.hasOwnProperty.call(payload, field)) {
+      updates[field] = payload[field];
+    }
+
+    return updates;
+  }, {});
+};
+
 const normalizeVehicleTypeForApp = (type = "other") => {
   const normalized = normalizeLooseText(type);
 
@@ -115,8 +161,8 @@ const validateOwnerVehicleAgainstBrta = async ({ payload, registrationNumber, us
   }
 
   const brtaDocuments = await brtaMockService.getUnifiedVehicleDocuments(
-  registrationNumber
-);
+    registrationNumber
+  );
 
   return {
     brtaVehicle,
@@ -210,7 +256,18 @@ const updateVehicle = asyncHandler(async (req, res) => {
     throw new AppError("You are not allowed to update this vehicle.", 403);
   }
 
-  const payload = { ...req.body };
+  let payload = { ...req.body };
+
+  if (req.user.role === "owner") {
+    payload = pickAllowedOwnerVehicleUpdates(payload);
+
+    if (Object.keys(payload).length === 0) {
+      throw new AppError(
+        "Vehicle information is synced from BRTA. Owners cannot update official vehicle fields from this page.",
+        403
+      );
+    }
+  }
 
   if (payload.registrationNumber) {
     payload.registrationNumber = normalizePlate(payload.registrationNumber);

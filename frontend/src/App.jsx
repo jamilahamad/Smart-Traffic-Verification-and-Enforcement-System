@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import useStore from './store/useStore';
+import { canAccessPage } from './constants/pages';
 
 import DashboardLayout from './components/layout/DashboardLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -80,15 +81,32 @@ export default function App() {
   useEffect(() => {
     if (isAuthenticated && publicPages.includes(currentPage)) {
       setCurrentPage('dashboard');
+      return;
     }
 
     if (!isAuthenticated && !publicPages.includes(currentPage)) {
       setCurrentPage('landing');
+      return;
     }
-  }, [isAuthenticated, currentPage]);
+
+    if (
+      isAuthenticated &&
+      !publicPages.includes(currentPage) &&
+      !canAccessPage(role, currentPage)
+    ) {
+      setCurrentPage('dashboard');
+    }
+  }, [isAuthenticated, currentPage, role]);
 
   const handleNavigate = (page) => {
-    setCurrentPage(normalizePage(page));
+    const nextPage = normalizePage(page);
+
+    if (isAuthenticated && !publicPages.includes(nextPage) && !canAccessPage(role, nextPage)) {
+      setCurrentPage('dashboard');
+      return;
+    }
+
+    setCurrentPage(nextPage);
   };
 
   const commonPageProps = useMemo(
@@ -116,6 +134,10 @@ export default function App() {
   };
 
   const renderProtectedPage = () => {
+    if (!canAccessPage(role, currentPage)) {
+      return renderDashboardByRole();
+    }
+
     switch (currentPage) {
       case 'dashboard':
         return renderDashboardByRole();
@@ -123,7 +145,6 @@ export default function App() {
       case 'profile':
         return <ProfilePage {...commonPageProps} />;
 
-      // Police pages
       case 'verify':
         return <VerifyPage {...commonPageProps} />;
 
@@ -136,7 +157,6 @@ export default function App() {
       case 'my-cases':
         return <MyCasesPage {...commonPageProps} />;
 
-      // Admin pages
       case 'all-cases':
         return <AllCasesPage {...commonPageProps} />;
 
@@ -161,14 +181,12 @@ export default function App() {
       case 'brta-photos':
         return <BrtaPhotoUploadPage {...commonPageProps} />;
 
-      // Driver pages
       case 'my-license':
         return <MyLicensePage {...commonPageProps} />;
 
       case 'my-violations':
         return <MyViolationsPage {...commonPageProps} />;
 
-      // Owner pages
       case 'my-vehicles':
         return <MyVehiclesPage {...commonPageProps} />;
 
