@@ -558,11 +558,16 @@ const useStore = create((set, get) => ({
     }
   },
 
-  login: async (email, password) => {
+    login: async (email, password) => {
     try {
       set({ authLoading: true, apiError: '' });
 
       const data = await api.login(email, password);
+
+      if (!data?.token || !data?.user) {
+        throw new Error(data?.message || 'Invalid email or password.');
+      }
+
       const user = mapUser(data.user);
 
       tokenStorage.setToken(data.token);
@@ -574,7 +579,11 @@ const useStore = create((set, get) => ({
         authLoading: false,
       });
 
-      await get().fetchDashboardData();
+      try {
+        await get().fetchDashboardData();
+      } catch {
+        // Dashboard data fail korleo login fail dhora hobe na
+      }
 
       return {
         success: true,
@@ -582,23 +591,33 @@ const useStore = create((set, get) => ({
         message: data.message || 'Login successful.',
       };
     } catch (error) {
+      tokenStorage.removeToken();
+
+      const message = error.message || 'Invalid email or password.';
+
       set({
+        currentUser: null,
+        isAuthenticated: false,
         authLoading: false,
-        apiError: error.message || 'Login failed.',
+        apiError: message,
       });
 
       return {
         success: false,
-        message: error.message || 'Login failed.',
+        message,
       };
     }
   },
 
-  register: async (payload) => {
+    register: async (payload) => {
     try {
       set({ authLoading: true, apiError: '' });
 
       const data = await api.register(payload);
+
+      if (data?.success === false) {
+        throw new Error(data.message || 'Registration failed.');
+      }
 
       set({ authLoading: false });
 
@@ -607,14 +626,18 @@ const useStore = create((set, get) => ({
         message: data.message || 'Registration successful.',
       };
     } catch (error) {
+      const message =
+        error?.message ||
+        'BRTA information did not match. Please check your name, phone, and NID.';
+
       set({
         authLoading: false,
-        apiError: error.message || 'Registration failed.',
+        apiError: message,
       });
 
       return {
         success: false,
-        message: error.message || 'Registration failed.',
+        message,
       };
     }
   },
@@ -805,7 +828,7 @@ const useStore = create((set, get) => ({
                 assignments: normalizeArray(data, 'assignments').map(mapAssignment),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
 
         tasks.push(
@@ -816,7 +839,7 @@ const useStore = create((set, get) => ({
                 verificationLogs: normalizeArray(data, 'logs').map(mapLog),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
 
         tasks.push(
@@ -827,7 +850,7 @@ const useStore = create((set, get) => ({
                 activityLogs: normalizeArray(data, 'activityLogs').map(mapLog),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
       }
 
@@ -856,7 +879,7 @@ const useStore = create((set, get) => ({
                 assignments: normalizeArray(data, 'assignments').map(mapAssignment),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
       }
 
@@ -885,7 +908,7 @@ const useStore = create((set, get) => ({
                 violations: normalizeArray(data, 'violations').map(mapViolation),
               })
             )
-            .catch(() => {})
+            .catch(() => { })
         );
       }
 
