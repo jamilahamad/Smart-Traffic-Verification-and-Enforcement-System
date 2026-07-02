@@ -19,6 +19,8 @@ export const PAGES = {
   BLACKLIST: 'blacklist',
   ANALYTICS: 'analytics',
   ACTIVITY_LOGS: 'activity-logs',
+  LICENSE_RENEWALS: 'license-renewals',
+  BRTA_PHOTOS: 'brta-photos',
 
   MY_LICENSE: 'my-license',
   MY_VIOLATIONS: 'my-violations',
@@ -49,6 +51,8 @@ export const PAGE_ACCESS = {
   [PAGES.BLACKLIST]: [ROLES.ADMIN],
   [PAGES.ANALYTICS]: [ROLES.ADMIN],
   [PAGES.ACTIVITY_LOGS]: [ROLES.ADMIN],
+  [PAGES.LICENSE_RENEWALS]: [ROLES.ADMIN],
+  [PAGES.BRTA_PHOTOS]: [ROLES.ADMIN],
 
   [PAGES.MY_LICENSE]: [ROLES.DRIVER],
   [PAGES.MY_VIOLATIONS]: [ROLES.DRIVER],

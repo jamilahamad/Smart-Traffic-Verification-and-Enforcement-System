@@ -89,7 +89,7 @@ const request = async (endpoint, options = {}) => {
     headers['Content-Type'] = 'application/json';
   }
 
-  if (token) {
+  if (options.auth !== false && token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
@@ -186,11 +186,14 @@ const api = {
       body: payload,
     }),
 
-  updateProfile: (id, payload) =>
-    request(`/users/${id}`, {
+  updateProfile: (payloadOrId, maybePayload) => {
+    const payload = maybePayload || payloadOrId || {};
+
+    return request('/auth/me', {
       method: 'PATCH',
       body: payload,
-    }),
+    });
+  },
 
   updateUserStatus: (id, status) =>
     request(`/users/${id}`, {

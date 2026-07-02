@@ -468,10 +468,7 @@ export default function ProfilePage() {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        nid: form.nid.trim(),
         address: form.address.trim(),
-        station: form.station.trim(),
-        badge: form.badge.trim(),
       };
 
       const response = await updateProfile(payload);
@@ -673,8 +670,10 @@ export default function ProfilePage() {
               <FormInput
                 label="NID Number"
                 value={form.nid}
-                onChange={(value) => setField('nid', value)}
+                onChange={() => { }}
                 placeholder="National ID number"
+                readOnly
+                helperText="Verified identity field — cannot be changed from profile."
               />
 
               <FormInput
@@ -689,15 +688,19 @@ export default function ProfilePage() {
                   <FormInput
                     label="Badge Number"
                     value={form.badge}
-                    onChange={(value) => setField('badge', value)}
+                    onChange={() => { }}
                     placeholder="Badge number"
+                    readOnly
+                    helperText="Assigned by admin — cannot be changed from profile."
                   />
 
                   <FormInput
                     label="Police Station"
                     value={form.station}
-                    onChange={(value) => setField('station', value)}
+                    onChange={() => { }}
                     placeholder="Police station"
+                    readOnly
+                    helperText="Assigned by admin — cannot be changed from profile."
                   />
                 </>
               )}

@@ -23,6 +23,7 @@ const sanitizeUser = (user) => {
     status: obj.status,
     phone: obj.phone || "",
     nid: obj.nid || "",
+    address: obj.address || "",
 
     brtaDriverId: obj.brtaDriverId || "",
     brtaOwnerId: obj.brtaOwnerId || "",
@@ -87,6 +88,7 @@ const createUser = async (payload) => {
     status = "active",
     phone,
     nid,
+    address,
     badge,
     station,
     rank,
@@ -128,6 +130,7 @@ const createUser = async (payload) => {
 
   if (phone) userData.phone = String(phone).trim();
   if (nid) userData.nid = String(nid).trim();
+  if (address) userData.address = String(address).trim();
 
   if (role === "police") {
     if (badge) userData.badge = String(badge).trim();
@@ -183,6 +186,7 @@ const updateUser = async (id, payload) => {
   }
 
   if (payload.phone !== undefined) update.phone = String(payload.phone).trim();
+  if (payload.address !== undefined) update.address = String(payload.address).trim();
   if (payload.nid !== undefined) {
     const cleanNid = String(payload.nid || "").trim();
 

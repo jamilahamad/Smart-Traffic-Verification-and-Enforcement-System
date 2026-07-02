@@ -50,6 +50,7 @@ const sanitizeUser = (user) => {
     status: obj.status,
     phone: obj.phone || "",
     nid: obj.nid || "",
+    address: obj.address || "",
 
     brtaDriverId: obj.brtaDriverId || "",
     brtaOwnerId: obj.brtaOwnerId || "",
@@ -398,9 +399,102 @@ const getCurrentUser = async (userId) => {
   return sanitizeUser(user);
 };
 
+const SELF_PROFILE_ALLOWED_FIELDS = ["name", "email", "phone", "address"];
+
+const SELF_PROFILE_BLOCKED_FIELDS = [
+  "role",
+  "status",
+  "password",
+  "nid",
+  "brtaDriverId",
+  "brtaOwnerId",
+  "licenseNumber",
+  "badge",
+  "station",
+  "rank",
+  "avatarUrl",
+  "avatarPublicId",
+  "avatarSource",
+];
+
+const updateCurrentUser = async (userId, payload = {}) => {
+  const existingUser = await User.findById(userId);
+
+  if (!existingUser) {
+    throw new AppError("User not found.", 404);
+  }
+
+  const blockedField = SELF_PROFILE_BLOCKED_FIELDS.find((field) =>
+    Object.prototype.hasOwnProperty.call(payload, field)
+  );
+
+  if (blockedField) {
+    throw new AppError(
+      `${blockedField} is a verified or role-managed field and cannot be changed from profile.`,
+      403
+    );
+  }
+
+  const update = {};
+
+  if (payload.name !== undefined) {
+    const name = clean(payload.name);
+
+    if (!name) {
+      throw new AppError("Full name is required.", 400);
+    }
+
+    update.name = name;
+  }
+
+  if (payload.email !== undefined) {
+    const email = cleanLower(payload.email);
+
+    if (!email) {
+      throw new AppError("Email address is required.", 400);
+    }
+
+    const emailTaken = await User.findOne({
+      email,
+      _id: { $ne: userId },
+    });
+
+    if (emailTaken) {
+      throw new AppError("Email is already used by another user.", 409);
+    }
+
+    update.email = email;
+  }
+
+  if (payload.phone !== undefined) {
+    update.phone = clean(payload.phone);
+  }
+
+  if (payload.address !== undefined) {
+    update.address = clean(payload.address);
+  }
+
+  const hasAllowedField = SELF_PROFILE_ALLOWED_FIELDS.some((field) =>
+    Object.prototype.hasOwnProperty.call(payload, field)
+  );
+
+  if (!hasAllowedField) {
+    return sanitizeUser(existingUser);
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { $set: update },
+    { new: true, runValidators: true }
+  );
+
+  return sanitizeUser(updatedUser);
+};
+
 module.exports = {
   sanitizeUser,
   registerUser,
   loginUser,
   getCurrentUser,
-}; 
+  updateCurrentUser,
+};

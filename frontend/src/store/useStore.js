@@ -578,7 +578,7 @@ const useStore = create((set, get) => ({
     }
   },
 
-    login: async (email, password) => {
+  login: async (email, password) => {
     try {
       set({ authLoading: true, apiError: '' });
 
@@ -629,7 +629,7 @@ const useStore = create((set, get) => ({
     }
   },
 
-    register: async (payload) => {
+  register: async (payload) => {
     try {
       set({ authLoading: true, apiError: '' });
 
@@ -688,7 +688,7 @@ const useStore = create((set, get) => ({
     try {
       set({ isLoading: true, apiError: '' });
 
-      const data = await api.updateProfile(user.id, payload);
+      const data = await api.updateProfile(payload);
       const updatedUser = mapUser(data.user || { ...user, ...payload });
 
       tokenStorage.setUser(updatedUser);
