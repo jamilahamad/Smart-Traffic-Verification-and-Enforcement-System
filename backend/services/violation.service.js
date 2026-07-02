@@ -5,6 +5,10 @@ const Vehicle = require("../models/Vehicle");
 const DrivingLicense = require("../models/DrivingLicense");
 const Assignment = require("../models/Assignment");
 
+const DriverAssignment = require("../models/DriverAssignment");
+const BrtaDriverVehicleAuthorization = require("../models/BrtaDriverVehicleAuthorization");
+const User = require("../models/User");
+
 const BrtaOwner = require("../models/BrtaOwner");
 const BrtaDriver = require("../models/BrtaDriver");
 const BrtaVehicle = require("../models/BrtaVehicle");
@@ -68,27 +72,106 @@ const normalizeResponsibility = (responsibility, violationCode) => {
   return "owner";
 };
 
-const findActiveAssignmentForVehicle = async ({ appVehicle, registrationNumber }) => {
-  const assignmentQuery = [];
+const findActiveAssignmentForVehicle = async ({
+  appVehicle,
+  registrationNumber,
+  licenseNumber,
+}) => {
+  const vehicleQuery = [];
+  const licenseQuery = [];
 
   if (appVehicle?._id) {
-    assignmentQuery.push({ vehicle: appVehicle._id });
+    vehicleQuery.push({ vehicle: appVehicle._id });
   }
 
   if (registrationNumber) {
-    assignmentQuery.push({ registrationNumber });
-    assignmentQuery.push({ vehicleRegistrationNumber: registrationNumber });
+    vehicleQuery.push({ registrationNumber });
+    vehicleQuery.push({ vehicleRegistrationNumber: registrationNumber });
   }
 
-  if (assignmentQuery.length === 0) {
+  if (licenseNumber) {
+    licenseQuery.push({ licenseNumber });
+  }
+
+  if (vehicleQuery.length === 0) {
     return null;
   }
 
-  return Assignment.findOne({
+  const query = {
     status: "active",
-    $or: assignmentQuery,
+  };
+
+  if (licenseQuery.length > 0) {
+    query.$and = [{ $or: vehicleQuery }, { $or: licenseQuery }];
+  } else {
+    query.$or = vehicleQuery;
+  }
+
+  return Assignment.findOne(query)
+    .populate("driver", "name email role phone nid brtaDriverId licenseNumber")
+    .populate("license", "licenseNumber holderName licenseClass status driver nid")
+    .lean();
+};
+
+const findLegacyAssignmentForVehicle = async ({ appVehicle }) => {
+  if (!appVehicle?._id) {
+    return null;
+  }
+
+  return DriverAssignment.findOne({
+    vehicle: appVehicle._id,
+    status: "active",
   })
-    .populate("license", "licenseNumber holderName licenseClass status")
+    .populate("driver", "name email role phone nid brtaDriverId licenseNumber")
+    .lean();
+};
+
+const findActiveBrtaAuthorization = async ({
+  registrationNumber,
+  licenseNumber,
+}) => {
+  if (!registrationNumber || !licenseNumber) {
+    return null;
+  }
+
+  const now = new Date();
+
+  return BrtaDriverVehicleAuthorization.findOne({
+    registrationNumber,
+    licenseNumber,
+    status: "active",
+    $or: [
+      { endDate: { $exists: false } },
+      { endDate: null },
+      { endDate: { $gte: now } },
+    ],
+  }).lean();
+};
+
+const findDriverUserFromRegistry = async ({ licenseNumber, brtaLicense }) => {
+  const query = [];
+
+  if (licenseNumber) {
+    query.push({ licenseNumber });
+  }
+
+  if (brtaLicense?.nid) {
+    query.push({ nid: brtaLicense.nid });
+  }
+
+  if (brtaLicense?.brtaDriverId) {
+    query.push({ brtaDriverId: brtaLicense.brtaDriverId });
+  }
+
+  if (query.length === 0) {
+    return null;
+  }
+
+  return User.findOne({
+    role: "driver",
+    $or: query,
+  })
+    .select("_id")
     .lean();
 };
 
@@ -279,15 +362,26 @@ const createViolation = async (payload, officer) => {
     finalDriver = appLicense.driver;
   }
 
-  if (shouldLinkDriver && (!finalDriver || !finalLicenseNumber)) {
-    const activeAssignment = await findActiveAssignmentForVehicle({
+  let activeAssignment = null;
+  let legacyAssignment = null;
+  let brtaAuthorization = null;
+  let brtaLicense = null;
+
+  if (shouldLinkDriver) {
+    activeAssignment = await findActiveAssignmentForVehicle({
       appVehicle,
       registrationNumber: finalRegistrationNumber,
+      licenseNumber: finalLicenseNumber,
     });
 
     if (activeAssignment) {
-      if (!finalDriver && activeAssignment.driver) {
-        finalDriver = activeAssignment.driver;
+      const assignmentDriver =
+        activeAssignment.driver && typeof activeAssignment.driver === "object"
+          ? activeAssignment.driver._id
+          : activeAssignment.driver;
+
+      if (!finalDriver && assignmentDriver) {
+        finalDriver = assignmentDriver;
       }
 
       if (!appLicense && activeAssignment.license) {
@@ -298,6 +392,12 @@ const createViolation = async (payload, officer) => {
             activeAssignment.licenseNumber ||
             ""
           );
+        } else if (isObjectId(activeAssignment.license)) {
+          appLicense = await DrivingLicense.findById(activeAssignment.license).lean();
+
+          if (appLicense?.licenseNumber) {
+            finalLicenseNumber = normalizeLicense(appLicense.licenseNumber);
+          }
         }
       }
 
@@ -311,17 +411,82 @@ const createViolation = async (payload, officer) => {
         }).lean();
       }
     }
+
+    if (!activeAssignment) {
+      legacyAssignment = await findLegacyAssignmentForVehicle({ appVehicle });
+
+      if (legacyAssignment?.driver) {
+        const legacyDriver =
+          typeof legacyAssignment.driver === "object"
+            ? legacyAssignment.driver
+            : null;
+
+        if (!finalDriver) {
+          finalDriver = legacyDriver?._id || legacyAssignment.driver;
+        }
+
+        if (!finalLicenseNumber && legacyDriver?.licenseNumber) {
+          finalLicenseNumber = normalizeLicense(legacyDriver.licenseNumber);
+        }
+      }
+    }
+
+    if (!appLicense && finalLicenseNumber) {
+      appLicense = await DrivingLicense.findOne({
+        licenseNumber: finalLicenseNumber,
+      }).lean();
+    }
+
+    if (!finalDriver && appLicense?.driver) {
+      finalDriver = appLicense.driver;
+    }
+
+    if (finalLicenseNumber) {
+      brtaLicense = await BrtaDrivingLicense.findOne({
+        licenseNumber: finalLicenseNumber,
+      }).lean();
+
+      brtaAuthorization = await findActiveBrtaAuthorization({
+        registrationNumber: finalRegistrationNumber,
+        licenseNumber: finalLicenseNumber,
+      });
+    }
+
+    if (!finalDriver && brtaLicense) {
+      const linkedDriverUser = await findDriverUserFromRegistry({
+        licenseNumber: finalLicenseNumber,
+        brtaLicense,
+      });
+
+      if (linkedDriverUser?._id) {
+        finalDriver = linkedDriverUser._id;
+      }
+    }
   }
 
-  if (shouldLinkDriver && !finalDriver && appLicense?.driver) {
-    finalDriver = appLicense.driver;
-  }
-
-  if (shouldLinkDriver && !finalDriver && !finalLicenseNumber) {
+  if (shouldLinkDriver && !finalLicenseNumber) {
     throw new AppError(
       "Driver-linked violation requires a driver license number or an active vehicle assignment.",
       400
     );
+  }
+
+  if (shouldLinkDriver) {
+    const hasDriverEvidence = Boolean(
+      finalDriver ||
+      appLicense?._id ||
+      brtaLicense?._id ||
+      activeAssignment?._id ||
+      legacyAssignment?._id ||
+      brtaAuthorization?._id
+    );
+
+    if (!hasDriverEvidence) {
+      throw new AppError(
+        "Driver-linked violation requires a valid driver license, registered driver, or active assignment/authorization.",
+        400
+      );
+    }
   }
 
   const caseId = await generateCaseId();
