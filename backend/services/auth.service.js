@@ -1,13 +1,38 @@
 const bcrypt = require("bcryptjs");
+
 const User = require("../models/User");
+const BrtaDriver = require("../models/BrtaDriver");
+const BrtaDrivingLicense = require("../models/BrtaDrivingLicense");
+const BrtaOwner = require("../models/BrtaOwner");
 const AppError = require("../utils/AppError");
 const generateToken = require("../utils/generateToken");
 const { resolveBrtaAvatar } = require("./brtaAvatar.service");
 
 const PUBLIC_REGISTER_ROLES = ["driver", "owner"];
+const BLOCKED_BRTA_STATUSES = ["suspended", "blacklisted", "inactive", "pending"];
+const BLOCKED_LICENSE_STATUSES = ["suspended", "blacklisted", "pending"];
 
 const clean = (value = "") => String(value || "").trim();
+const cleanLower = (value = "") => clean(value).toLowerCase();
 const cleanUpper = (value = "") => clean(value).toUpperCase();
+const onlyDigits = (value = "") => clean(value).replace(/\D/g, "");
+
+const namesMatch = (submitted = "", official = "") => {
+  return cleanLower(submitted).replace(/\s+/g, " ") === cleanLower(official).replace(/\s+/g, " ");
+};
+
+const phonesMatch = (submitted = "", official = "") => {
+  const submittedDigits = onlyDigits(submitted);
+  const officialDigits = onlyDigits(official);
+
+  if (!submittedDigits || !officialDigits) return false;
+
+  return submittedDigits === officialDigits;
+};
+
+const isBlockedStatus = (status = "", blockedStatuses = BLOCKED_BRTA_STATUSES) => {
+  return blockedStatuses.includes(cleanLower(status));
+};
 
 const sanitizeUser = (user) => {
   if (!user) return null;
@@ -42,6 +67,149 @@ const sanitizeUser = (user) => {
   };
 };
 
+const findDriverLicense = async ({ brtaDriver, nid, licenseNumber }) => {
+  const queries = [];
+  const cleanLicense = cleanUpper(licenseNumber);
+  const cleanNid = clean(nid);
+
+  if (cleanLicense) queries.push({ licenseNumber: cleanLicense });
+  if (brtaDriver?.brtaDriverId) queries.push({ brtaDriverId: brtaDriver.brtaDriverId });
+  if (brtaDriver?.nid || cleanNid) queries.push({ nid: brtaDriver?.nid || cleanNid });
+
+  if (queries.length === 0) return null;
+
+  return BrtaDrivingLicense.findOne({ $or: queries }).lean();
+};
+
+const resolveVerifiedDriverRegistration = async ({ name, phone, nid, licenseNumber }) => {
+  const cleanNid = clean(nid);
+
+  if (!clean(name)) {
+    throw new AppError("Full name is required for driver registration.", 400);
+  }
+
+  if (!clean(phone)) {
+    throw new AppError("Phone number is required for driver registration.", 400);
+  }
+
+  if (!cleanNid) {
+    throw new AppError("NID number is required for driver registration.", 400);
+  }
+
+  const brtaDriver = await BrtaDriver.findOne({ nid: cleanNid }).lean();
+
+  if (!brtaDriver) {
+    throw new AppError("No BRTA driver record was found for this NID.", 404);
+  }
+
+  if (isBlockedStatus(brtaDriver.status)) {
+    throw new AppError(
+      `This BRTA driver record is ${brtaDriver.status}. Registration is not allowed.`,
+      403
+    );
+  }
+
+  if (!namesMatch(name, brtaDriver.name)) {
+    throw new AppError("Full name does not match the BRTA driver record.", 400);
+  }
+
+  if (!phonesMatch(phone, brtaDriver.phone)) {
+    throw new AppError("Phone number does not match the BRTA driver record.", 400);
+  }
+
+  const brtaLicense = await findDriverLicense({
+    brtaDriver,
+    nid: cleanNid,
+    licenseNumber,
+  });
+
+  if (!brtaLicense) {
+    throw new AppError("No BRTA driving license record was found for this NID.", 404);
+  }
+
+  if (isBlockedStatus(brtaLicense.status, BLOCKED_LICENSE_STATUSES)) {
+    throw new AppError(
+      `This BRTA driving license is ${brtaLicense.status}. Registration is not allowed.`,
+      403
+    );
+  }
+
+  const duplicateIdentity = await User.findOne({
+    role: "driver",
+    $or: [
+      { nid: cleanNid },
+      { brtaDriverId: brtaDriver.brtaDriverId },
+      { licenseNumber: brtaLicense.licenseNumber },
+    ],
+  });
+
+  if (duplicateIdentity) {
+    throw new AppError("A driver account is already registered with this BRTA identity.", 409);
+  }
+
+  return {
+    brtaDriver,
+    brtaLicense,
+    nid: cleanNid,
+    phone: clean(brtaDriver.phone),
+    brtaDriverId: clean(brtaDriver.brtaDriverId),
+    licenseNumber: cleanUpper(brtaLicense.licenseNumber),
+  };
+};
+
+const resolveVerifiedOwnerRegistration = async ({ name, phone, nid }) => {
+  const cleanNid = clean(nid);
+
+  if (!clean(name)) {
+    throw new AppError("Full name is required for owner registration.", 400);
+  }
+
+  if (!clean(phone)) {
+    throw new AppError("Phone number is required for owner registration.", 400);
+  }
+
+  if (!cleanNid) {
+    throw new AppError("NID number is required for owner registration.", 400);
+  }
+
+  const brtaOwner = await BrtaOwner.findOne({ nid: cleanNid }).lean();
+
+  if (!brtaOwner) {
+    throw new AppError("No BRTA owner record was found for this NID.", 404);
+  }
+
+  if (isBlockedStatus(brtaOwner.status)) {
+    throw new AppError(
+      `This BRTA owner record is ${brtaOwner.status}. Registration is not allowed.`,
+      403
+    );
+  }
+
+  if (!namesMatch(name, brtaOwner.name)) {
+    throw new AppError("Full name does not match the BRTA owner record.", 400);
+  }
+
+  if (!phonesMatch(phone, brtaOwner.phone)) {
+    throw new AppError("Phone number does not match the BRTA owner record.", 400);
+  }
+
+  const duplicateIdentity = await User.findOne({
+    role: "owner",
+    $or: [{ nid: cleanNid }, { brtaOwnerId: brtaOwner.brtaOwnerId }],
+  });
+
+  if (duplicateIdentity) {
+    throw new AppError("An owner account is already registered with this BRTA identity.", 409);
+  }
+
+  return {
+    brtaOwner,
+    nid: cleanNid,
+    phone: clean(brtaOwner.phone),
+    brtaOwnerId: clean(brtaOwner.brtaOwnerId),
+  };
+};
+
 const registerUser = async (payload) => {
   const {
     name,
@@ -58,19 +226,35 @@ const registerUser = async (payload) => {
     rank,
   } = payload;
 
-  if (!name || !email || !password) {
-    throw new AppError("Name, email and password are required.", 400);
+  if (!clean(name)) {
+    throw new AppError("Full name is required.", 400);
+  }
+
+  if (!clean(email)) {
+    throw new AppError("Email address is required.", 400);
+  }
+
+  if (!clean(phone)) {
+    throw new AppError("Phone number is required.", 400);
+  }
+
+  if (!clean(nid)) {
+    throw new AppError("NID number is required.", 400);
+  }
+
+  if (!password) {
+    throw new AppError("Password is required.", 400);
   }
 
   if (!PUBLIC_REGISTER_ROLES.includes(role)) {
     throw new AppError("Public registration is only allowed for driver or owner accounts.", 403);
   }
 
-  if (password.length < 6) {
+  if (String(password).length < 6) {
     throw new AppError("Password must be at least 6 characters.", 400);
   }
 
-  const normalizedEmail = String(email).trim().toLowerCase();
+  const normalizedEmail = cleanLower(email);
 
   const existingUser = await User.findOne({ email: normalizedEmail });
 
@@ -78,40 +262,42 @@ const registerUser = async (payload) => {
     throw new AppError("User already exists with this email.", 409);
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const verifiedIdentity =
+    role === "driver"
+      ? await resolveVerifiedDriverRegistration({ name, phone, nid, licenseNumber })
+      : await resolveVerifiedOwnerRegistration({ name, phone, nid });
+
+  const hashedPassword = await bcrypt.hash(String(password), 10);
 
   const brtaAvatar = await resolveBrtaAvatar({
     role,
-    nid,
-    phone,
-    brtaDriverId,
-    brtaOwnerId,
-    licenseNumber,
+    nid: verifiedIdentity.nid,
+    phone: verifiedIdentity.phone || phone,
+    brtaDriverId: verifiedIdentity.brtaDriverId || brtaDriverId,
+    brtaOwnerId: verifiedIdentity.brtaOwnerId || brtaOwnerId,
+    licenseNumber: verifiedIdentity.licenseNumber || licenseNumber,
   });
 
   const userData = {
-    name: String(name).trim(),
+    name: clean(name),
     email: normalizedEmail,
     password: hashedPassword,
     role,
     status: "active",
+    phone: clean(phone) || verifiedIdentity.phone || "",
+    nid: verifiedIdentity.nid,
     avatarUrl: brtaAvatar.avatarUrl,
     avatarPublicId: brtaAvatar.avatarPublicId,
     avatarSource: brtaAvatar.avatarSource,
   };
 
-  if (phone) userData.phone = clean(phone);
-  if (nid) userData.nid = clean(nid);
-
   if (role === "driver") {
-    if (brtaAvatar.brtaDriverId) userData.brtaDriverId = brtaAvatar.brtaDriverId;
-    if (licenseNumber || brtaAvatar.licenseNumber) {
-      userData.licenseNumber = cleanUpper(licenseNumber || brtaAvatar.licenseNumber);
-    }
+    userData.brtaDriverId = verifiedIdentity.brtaDriverId || brtaAvatar.brtaDriverId;
+    userData.licenseNumber = verifiedIdentity.licenseNumber || brtaAvatar.licenseNumber;
   }
 
   if (role === "owner") {
-    if (brtaAvatar.brtaOwnerId) userData.brtaOwnerId = brtaAvatar.brtaOwnerId;
+    userData.brtaOwnerId = verifiedIdentity.brtaOwnerId || brtaAvatar.brtaOwnerId;
   }
 
   if (role === "police") {
@@ -121,7 +307,6 @@ const registerUser = async (payload) => {
   }
 
   const user = await User.create(userData);
-
   const token = generateToken(user);
 
   return {
@@ -133,11 +318,15 @@ const registerUser = async (payload) => {
 const loginUser = async (payload) => {
   const { email, password } = payload;
 
-  if (!email || !password) {
-    throw new AppError("Email and password are required.", 400);
+  if (!clean(email)) {
+    throw new AppError("Email address is required.", 400);
   }
 
-  const normalizedEmail = String(email).trim().toLowerCase();
+  if (!password) {
+    throw new AppError("Password is required.", 400);
+  }
+
+  const normalizedEmail = cleanLower(email);
 
   const user = await User.findOne({ email: normalizedEmail }).select("+password");
 
@@ -145,7 +334,7 @@ const loginUser = async (payload) => {
     throw new AppError("Invalid email or password.", 401);
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(String(password), user.password);
 
   if (!isMatch) {
     throw new AppError("Invalid email or password.", 401);
@@ -159,7 +348,6 @@ const loginUser = async (payload) => {
     lastLogin: new Date(),
   };
 
-  // Existing old users er avatarUrl empty hole login time BRTA photo sync hobe.
   if (["driver", "owner"].includes(user.role) && !user.avatarUrl) {
     const brtaAvatar = await resolveBrtaAvatar({
       role: user.role,
@@ -215,4 +403,4 @@ module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
-};
+}; 

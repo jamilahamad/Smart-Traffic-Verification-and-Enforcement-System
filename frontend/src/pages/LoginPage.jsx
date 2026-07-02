@@ -12,6 +12,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { API_BASE_URL, tokenStorage } from '../lib/api';
 import '../styles/LoginPage.css';
 
 const initialRegisterForm = {
@@ -23,14 +24,69 @@ const initialRegisterForm = {
   role: 'driver',
 };
 
+const initialFieldErrors = {
+  loginEmail: '',
+  loginPassword: '',
+  name: '',
+  email: '',
+  phone: '',
+  nid: '',
+  password: '',
+};
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phonePattern = /^01\d{9}$/;
+
+const getInputClass = (hasError = false) => {
+  return `w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81] ${hasError ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
+    }`;
+};
+
+const getPasswordInputClass = (hasError = false) => {
+  return `w-full pl-10 pr-12 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81] ${hasError ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
+    }`;
+};
+
+const getRegisterFailureMessage = (result) => {
+  const message = String(result?.message || '').trim();
+
+  if (!message) {
+    return '';
+  }
+
+  const lowerMessage = message.toLowerCase();
+
+  const failedKeywords = [
+    'not found',
+    'does not match',
+    'did not match',
+    'invalid',
+    'failed',
+    'forbidden',
+    'not allowed',
+    'already registered',
+    'already exists',
+    'required',
+    'brta',
+  ];
+
+  const isFailureMessage = failedKeywords.some((keyword) =>
+    lowerMessage.includes(keyword)
+  );
+
+  return isFailureMessage ? message : '';
+};
+
 export default function LoginPage({ onBack }) {
-  const { login, register } = useStore();
+  const setCurrentUser = useStore((state) => state.setCurrentUser);
+  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
 
   const [mode, setMode] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState(initialFieldErrors);
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -42,6 +98,7 @@ export default function LoginPage({ onBack }) {
   const clearMessages = () => {
     setError('');
     setSuccess('');
+    setFieldErrors(initialFieldErrors);
   };
 
   const switchMode = (nextMode) => {
@@ -63,6 +120,15 @@ export default function LoginPage({ onBack }) {
       ...current,
       [field]: value,
     }));
+
+    const errorKey = field === 'email' ? 'loginEmail' : 'loginPassword';
+
+    setFieldErrors((current) => ({
+      ...current,
+      [errorKey]: '',
+    }));
+
+    setError('');
   };
 
   const updateRegisterField = (field, value) => {
@@ -70,65 +136,172 @@ export default function LoginPage({ onBack }) {
       ...current,
       [field]: value,
     }));
+
+    setFieldErrors((current) => ({
+      ...current,
+      [field]: '',
+    }));
+
+    setError('');
   };
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
-    clearMessages();
-
+  const validateLoginForm = () => {
+    const nextErrors = { ...initialFieldErrors };
     const email = loginForm.email.trim();
     const password = loginForm.password.trim();
 
-    if (!email || !password) {
-      setError('Please fill in all fields.');
-      return;
+    if (!email) {
+      nextErrors.loginEmail = 'Email address is required.';
+    } else if (!emailPattern.test(email)) {
+      nextErrors.loginEmail = 'Enter a valid email address.';
     }
 
-    setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
-
-    if (!result.success) {
-      setError(result.message || 'Login failed.');
+    if (!password) {
+      nextErrors.loginPassword = 'Password is required.';
     }
+
+    setFieldErrors(nextErrors);
+
+    return !nextErrors.loginEmail && !nextErrors.loginPassword;
   };
 
-  const handleRegister = async (event) => {
-    event.preventDefault();
-    clearMessages();
+  const validateRegisterForm = (payload) => {
+    const nextErrors = { ...initialFieldErrors };
 
-    const payload = {
-      name: registerForm.name.trim(),
-      email: registerForm.email.trim(),
-      password: registerForm.password.trim(),
-      phone: registerForm.phone.trim(),
-      nid: registerForm.nid.trim(),
-      role: registerForm.role,
-    };
-
-    if (!payload.name || !payload.email || !payload.password || !payload.phone || !payload.nid) {
-      setError('Please fill in all fields.');
-      return;
+    if (!payload.name) {
+      nextErrors.name = 'Full name is required.';
     }
 
-    if (payload.password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
+    if (!payload.email) {
+      nextErrors.email = 'Email address is required.';
+    } else if (!emailPattern.test(payload.email)) {
+      nextErrors.email = 'Enter a valid email address.';
     }
 
-    if (!/^\d{11}$/.test(payload.phone)) {
-      setError('Phone number must be 11 digits.');
-      return;
+    if (!payload.phone) {
+      nextErrors.phone = 'Phone number is required.';
+    } else if (!phonePattern.test(payload.phone)) {
+      nextErrors.phone = 'Phone number must be 11 digits and start with 01.';
     }
 
+    if (!payload.nid) {
+      nextErrors.nid = 'NID number is required.';
+    }
+
+    if (!payload.password) {
+      nextErrors.password = 'Password is required.';
+    } else if (payload.password.length < 6) {
+      nextErrors.password = 'Password must be at least 6 characters.';
+    }
+
+    setFieldErrors(nextErrors);
+
+    return !Object.values(nextErrors).some(Boolean);
+  };
+
+
+  const submitAuthRequest = async (endpoint, payload) => {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  let data = {};
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+        data?.error ||
+        data?.errors?.[0]?.message ||
+        `Request failed with status ${response.status}.`
+    );
+  }
+
+  if (data?.success === false) {
+    throw new Error(data.message || 'Request failed.');
+  }
+
+  return data?.data || data;
+};
+
+
+
+  const handleLogin = async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  setError('');
+  setSuccess('');
+
+  if (!validateLoginForm()) {
+    setError('Please fix the highlighted fields and try again.');
+    return;
+  }
+
+  const payload = {
+    email: loginForm.email.trim(),
+    password: loginForm.password.trim(),
+  };
+
+  try {
     setLoading(true);
-    const result = await register(payload);
-    setLoading(false);
 
-    if (!result.success) {
-      setError(result.message || 'Registration failed.');
-      return;
+    const data = await submitAuthRequest('/auth/login', payload);
+
+    if (!data?.token || !data?.user) {
+      throw new Error('Invalid email or password.');
     }
+
+    tokenStorage.setToken(data.token);
+    tokenStorage.setUser(data.user);
+    setCurrentUser(data.user);
+
+    try {
+      await fetchDashboardData();
+    } catch {
+      // Dashboard data fail korleo login success thakbe
+    }
+  } catch (error) {
+    setError(error?.message || 'Invalid email or password.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handleRegister = async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  setError('');
+  setSuccess('');
+
+  const payload = {
+    name: registerForm.name.trim(),
+    email: registerForm.email.trim(),
+    password: registerForm.password.trim(),
+    phone: registerForm.phone.trim(),
+    nid: registerForm.nid.trim(),
+    role: registerForm.role,
+  };
+
+  if (!validateRegisterForm(payload)) {
+    setError('Please fix the highlighted fields and try again.');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    await submitAuthRequest('/auth/register', payload);
 
     setSuccess('Registration successful! Please login.');
     setMode('login');
@@ -139,8 +312,16 @@ export default function LoginPage({ onBack }) {
     });
 
     setRegisterForm(initialRegisterForm);
-  };
-
+    setFieldErrors(initialFieldErrors);
+  } catch (error) {
+    setError(
+      error?.message ||
+        'BRTA information did not match. Please check your name, phone, and NID.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="login-wrapper min-h-screen bg-gradient-to-br from-[#0d1b2a] via-[#1b2838] to-[#0f4c81]">
       <header className="login-brand-bar">
@@ -215,7 +396,11 @@ export default function LoginPage({ onBack }) {
               )}
 
               {mode === 'login' ? (
-                <form onSubmit={handleLogin} className="login-form space-y-4">
+                <form
+                  onSubmit={handleLogin}
+                  className="login-form space-y-4"
+                  noValidate
+                >
                   <div className="login-field-group">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Email Address
@@ -233,9 +418,13 @@ export default function LoginPage({ onBack }) {
                         onChange={(event) => updateLoginField('email', event.target.value)}
                         placeholder="Enter your email"
                         autoComplete="email"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+                        className={getInputClass(Boolean(fieldErrors.loginEmail))}
                       />
                     </div>
+
+                    {fieldErrors.loginEmail && (
+                      <p className="login-field-error">{fieldErrors.loginEmail}</p>
+                    )}
                   </div>
 
                   <div className="login-field-group">
@@ -255,7 +444,7 @@ export default function LoginPage({ onBack }) {
                         onChange={(event) => updateLoginField('password', event.target.value)}
                         placeholder="Enter your password"
                         autoComplete="current-password"
-                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+                        className={getPasswordInputClass(Boolean(fieldErrors.loginPassword))}
                       />
 
                       <button
@@ -267,6 +456,10 @@ export default function LoginPage({ onBack }) {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+
+                    {fieldErrors.loginPassword && (
+                      <p className="login-field-error">{fieldErrors.loginPassword}</p>
+                    )}
                   </div>
 
                   <button
@@ -279,7 +472,11 @@ export default function LoginPage({ onBack }) {
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleRegister} className="login-form space-y-4">
+                <form
+                  onSubmit={handleRegister}
+                  className="login-form space-y-4"
+                  noValidate
+                >
                   <div className="login-field-group">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Register As
@@ -327,9 +524,13 @@ export default function LoginPage({ onBack }) {
                         onChange={(event) => updateRegisterField('name', event.target.value)}
                         placeholder="Enter your full name"
                         autoComplete="name"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+                        className={getInputClass(Boolean(fieldErrors.name))}
                       />
                     </div>
+
+                    {fieldErrors.name && (
+                      <p className="login-field-error">{fieldErrors.name}</p>
+                    )}
                   </div>
 
                   <div className="login-field-group">
@@ -349,9 +550,13 @@ export default function LoginPage({ onBack }) {
                         onChange={(event) => updateRegisterField('email', event.target.value)}
                         placeholder="Enter your email"
                         autoComplete="email"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+                        className={getInputClass(Boolean(fieldErrors.email))}
                       />
                     </div>
+
+                    {fieldErrors.email && (
+                      <p className="login-field-error">{fieldErrors.email}</p>
+                    )}
                   </div>
 
                   <div className="login-register-grid grid grid-cols-2 gap-3">
@@ -372,9 +577,13 @@ export default function LoginPage({ onBack }) {
                           onChange={(event) => updateRegisterField('phone', event.target.value)}
                           placeholder="01XXXXXXXXX"
                           autoComplete="tel"
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+                          className={getInputClass(Boolean(fieldErrors.phone))}
                         />
                       </div>
+
+                      {fieldErrors.phone && (
+                        <p className="login-field-error">{fieldErrors.phone}</p>
+                      )}
                     </div>
 
                     <div className="login-field-group">
@@ -393,9 +602,13 @@ export default function LoginPage({ onBack }) {
                           value={registerForm.nid}
                           onChange={(event) => updateRegisterField('nid', event.target.value)}
                           placeholder="NID Number"
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+                          className={getInputClass(Boolean(fieldErrors.nid))}
                         />
                       </div>
+
+                      {fieldErrors.nid && (
+                        <p className="login-field-error">{fieldErrors.nid}</p>
+                      )}
                     </div>
                   </div>
 
@@ -416,7 +629,7 @@ export default function LoginPage({ onBack }) {
                         onChange={(event) => updateRegisterField('password', event.target.value)}
                         placeholder="Minimum 6 characters"
                         autoComplete="new-password"
-                        className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+                        className={getPasswordInputClass(Boolean(fieldErrors.password))}
                       />
 
                       <button
@@ -428,7 +641,15 @@ export default function LoginPage({ onBack }) {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+
+                    {fieldErrors.password && (
+                      <p className="login-field-error">{fieldErrors.password}</p>
+                    )}
                   </div>
+
+                  <p className="login-brta-note rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                    Driver/Owner account will be created only when your name, phone, and NID match the BRTA mock database.
+                  </p>
 
                   <button
                     type="submit"
