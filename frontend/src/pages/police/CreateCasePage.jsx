@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle,
@@ -163,13 +163,16 @@ const formatStatus = (status) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
 
-export default function CreateCasePage({ verificationResult }) {
+export default function CreateCasePage({ verificationResult: verificationResultProp }) {
   const currentUser = useStore((state) => state.currentUser);
   const vehicles = useStore((state) => state.vehicles);
   const licenses = useStore((state) => state.licenses);
   const addLog = useStore((state) => state.addLog);
   const fetchDashboardData = useStore((state) => state.fetchDashboardData);
   const apiError = useStore((state) => state.apiError);
+  const storedVerificationResult = useStore((state) => state.verificationResult);
+
+  const verificationResult = verificationResultProp || storedVerificationResult || null;
 
   const verificationVehicle = verificationResult?.vehicle || null;
   const verificationLicense = verificationResult?.license || verificationResult?.linkedLicense || null;
@@ -179,7 +182,7 @@ export default function CreateCasePage({ verificationResult }) {
     cleanPlate(getVehiclePlate(verificationVehicle))
   );
   const [licenseNumber, setLicenseNumber] = useState(
-    cleanLicense(verificationLicense?.licenseNumber || '')
+    cleanLicense(verificationLicense?.licenseNumber || verificationDriver?.licenseNumber || '')
   );
   const [selectedViolations, setSelectedViolations] = useState([]);
   const [location, setLocation] = useState('');
@@ -219,6 +222,21 @@ export default function CreateCasePage({ verificationResult }) {
     return matchedLicense || verificationLicense || null;
   }, [licenses, licenseNumber, verificationLicense]);
 
+  useEffect(() => {
+    const nextPlate = cleanPlate(getVehiclePlate(verificationVehicle));
+    const nextLicense = cleanLicense(
+      verificationLicense?.licenseNumber || verificationDriver?.licenseNumber || ''
+    );
+
+    if (nextPlate) {
+      setPlateNumber(nextPlate);
+    }
+
+    if (nextLicense) {
+      setLicenseNumber(nextLicense);
+    }
+  }, [verificationVehicle, verificationLicense, verificationDriver]);
+
   const driver = verificationDriver || selectedLicense?.driver || null;
 
   const totalFine = selectedViolations.reduce((sum, code) => {
@@ -229,6 +247,13 @@ export default function CreateCasePage({ verificationResult }) {
   const selectedViolationDetails = selectedViolations
     .map((code) => getViolationByCode(code))
     .filter(Boolean);
+
+  const selectedDriverLinkedViolations = selectedViolationDetails.filter((violationType) => {
+    const responsibility = getViolationResponsibility(violationType);
+    return responsibility === 'driver' || responsibility === 'both';
+  });
+
+  const requiresDriverLicense = selectedDriverLinkedViolations.length > 0;
 
   const hasVehicleInput = Boolean(cleanPlate(plateNumber));
   const hasLicenseInput = Boolean(cleanLicense(licenseNumber));
@@ -290,6 +315,10 @@ export default function CreateCasePage({ verificationResult }) {
 
     if (selectedViolations.length === 0) {
       return 'Please select at least one violation type.';
+    }
+
+    if (requiresDriverLicense && !cleanLicense(licenseNumber || selectedLicense?.licenseNumber)) {
+      return 'Driver or both-responsibility E-Challan requires a valid driver license number. Please verify/enter the driver license first.';
     }
 
     if (!location.trim()) {
@@ -498,7 +527,9 @@ export default function CreateCasePage({ verificationResult }) {
             <div className="create-case-field-group">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Driver License Number
-                <span className="text-gray-400 font-normal"> — optional</span>
+                <span className="text-gray-400 font-normal">
+                  {requiresDriverLicense ? ' *' : ' — optional'}
+                </span>
               </label>
 
               <div className="create-case-input-wrap relative">

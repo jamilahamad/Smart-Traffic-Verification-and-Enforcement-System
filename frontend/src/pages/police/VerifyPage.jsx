@@ -331,9 +331,13 @@ const licenseQuickExamples = [
   },
 ];
 
-export default function VerifyPage({ onNavigate = () => { }, setVerificationResult }) {
+export default function VerifyPage({
+  onNavigate = () => { },
+  setVerificationResult: externalSetVerificationResult,
+}) {
   const currentUser = useStore((state) => state.currentUser);
   const addLog = useStore((state) => state.addLog);
+  const setVerificationResult = useStore((state) => state.setVerificationResult);
   const qrVerificationPayload = useStore((state) => state.qrVerificationPayload);
   const clearQRVerificationPayload = useStore((state) => state.clearQRVerificationPayload);
 
@@ -557,6 +561,10 @@ export default function VerifyPage({ onNavigate = () => { }, setVerificationResu
 
     if (typeof setVerificationResult === 'function') {
       setVerificationResult(preparedResult);
+    }
+
+    if (typeof externalSetVerificationResult === 'function') {
+      externalSetVerificationResult(preparedResult);
     }
 
     onNavigate('create-case');
