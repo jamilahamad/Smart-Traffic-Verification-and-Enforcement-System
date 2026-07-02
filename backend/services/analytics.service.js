@@ -260,8 +260,12 @@ const getAnalyticsSummary = async () => {
     suspendedBrtaVehicles,
     blacklistedBrtaVehicles,
 
-    totalVehicleRecords: Math.max(totalVehicles, totalBrtaVehicles),
-    activeVehicleRecords: Math.max(activeVehicles, activeBrtaVehicles),
+    totalVehicleRecords: totalBrtaVehicles,
+    activeVehicleRecords: activeBrtaVehicles,
+    stvesRegisteredVehicles: totalVehicles,
+    activeStvesRegisteredVehicles: activeVehicles,
+    brtaVehicleRecords: totalBrtaVehicles,
+    activeBrtaVehicleRecords: activeBrtaVehicles,
 
     totalBrtaLicenses,
     totalBrtaOwners,

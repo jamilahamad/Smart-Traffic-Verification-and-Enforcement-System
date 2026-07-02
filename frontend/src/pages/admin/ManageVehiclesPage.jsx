@@ -155,14 +155,14 @@ const hasVehicleAttention = (vehicle = {}) => {
 const isBrtaVerifiedVehicle = (vehicle = {}) => {
   return Boolean(
     vehicle.dataSource === 'BRTA_MOCK' ||
-      vehicle.brtaProvider ||
-      vehicle.documents ||
-      vehicle.qrCode ||
-      hasValidDocumentDate(vehicle.registrationExpiry) ||
-      hasValidDocumentDate(vehicle.fitnessExpiry) ||
-      hasValidDocumentDate(vehicle.taxTokenExpiry) ||
-      hasValidDocumentDate(vehicle.routePermitExpiry) ||
-      hasValidDocumentDate(vehicle.insuranceExpiry)
+    vehicle.brtaProvider ||
+    vehicle.documents ||
+    vehicle.qrCode ||
+    hasValidDocumentDate(vehicle.registrationExpiry) ||
+    hasValidDocumentDate(vehicle.fitnessExpiry) ||
+    hasValidDocumentDate(vehicle.taxTokenExpiry) ||
+    hasValidDocumentDate(vehicle.routePermitExpiry) ||
+    hasValidDocumentDate(vehicle.insuranceExpiry)
   );
 };
 
@@ -193,23 +193,23 @@ export default function ManageVehiclesPage() {
     const attentionVehicles = vehicleList.filter(hasVehicleAttention).length;
     const averageSafety = vehicleList.length
       ? Math.round(
-          vehicleList.reduce((total, vehicle) => total + Number(vehicle.safetyScore || 0), 0) /
-            vehicleList.length
-        )
+        vehicleList.reduce((total, vehicle) => total + Number(vehicle.safetyScore || 0), 0) /
+        vehicleList.length
+      )
       : 0;
 
     return [
       {
-        label: 'Total Vehicles',
+        label: 'BRTA Vehicle Records',
         value: vehicleList.length,
-        note: `${activeVehicles} active records`,
+        note: `${activeVehicles} active BRTA records`,
         icon: Car,
         tone: 'blue',
       },
       {
-        label: 'BRTA Verified',
+        label: 'Verified Registry Records',
         value: verifiedVehicles,
-        note: 'Matched with registry',
+        note: 'Matched with BRTA registry',
         icon: ShieldCheck,
         tone: 'green',
       },
@@ -230,7 +230,7 @@ export default function ManageVehiclesPage() {
       {
         label: 'Avg Safety',
         value: `${averageSafety}/100`,
-        note: 'Current fleet score',
+        note: 'Current BRTA fleet score',
         icon: FileCheck2,
         tone: 'indigo',
       },
@@ -276,20 +276,18 @@ export default function ManageVehiclesPage() {
     addLog({
       userId: currentUser.id || currentUser._id,
       userName: currentUser.name,
-      action: `Vehicle ${
-        action === 'activate'
-          ? 'Activated'
-          : action === 'suspend'
-            ? 'Suspended'
-            : 'Blacklisted'
-      }`,
-      details: `Vehicle ${plate} has been ${
-        action === 'activate'
-          ? 'activated'
-          : action === 'suspend'
-            ? 'suspended'
-            : 'blacklisted'
-      } by ${currentUser.name}.`,
+      action: `Vehicle ${action === 'activate'
+        ? 'Activated'
+        : action === 'suspend'
+          ? 'Suspended'
+          : 'Blacklisted'
+        }`,
+      details: `Vehicle ${plate} has been ${action === 'activate'
+        ? 'activated'
+        : action === 'suspend'
+          ? 'suspended'
+          : 'blacklisted'
+        } by ${currentUser.name}.`,
       type: 'admin',
     });
   };
@@ -353,13 +351,13 @@ export default function ManageVehiclesPage() {
           <h1 className="text-2xl font-bold text-gray-800">Manage Vehicles</h1>
 
           <p className="text-sm text-gray-500 mt-1">
-            {vehicleList.length} vehicles registered and monitored through BRTA verification.
+            {vehicleList.length} BRTA vehicle records monitored for verification and enforcement.
           </p>
         </div>
 
         <div className="manage-vehicles-source-note inline-flex items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
           <ShieldCheck size={15} />
-          BRTA verified records only
+          BRTA registry records only
         </div>
       </header>
 
@@ -423,11 +421,10 @@ export default function ManageVehiclesPage() {
                 key={status}
                 type="button"
                 onClick={() => setStatusFilter(status)}
-                className={`manage-vehicles-filter-button px-3 py-1.5 rounded-lg text-xs font-medium ${
-                  statusFilter === status
-                    ? 'bg-[#0f4c81] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`manage-vehicles-filter-button px-3 py-1.5 rounded-lg text-xs font-medium ${statusFilter === status
+                  ? 'bg-[#0f4c81] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 {formatLabel(status)}
               </button>
@@ -474,9 +471,8 @@ export default function ManageVehiclesPage() {
                   </div>
 
                   <span
-                    className={`manage-vehicles-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${
-                      statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
-                    }`}
+                    className={`manage-vehicles-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
+                      }`}
                   >
                     {formatLabel(status)}
                   </span>
@@ -751,9 +747,8 @@ function DetailRow({ label, value, isDate = false }) {
       <span className="text-gray-400">{label}</span>
 
       <span
-        className={`font-medium text-right ${
-          expired ? 'text-red-600' : 'text-gray-700'
-        }`}
+        className={`font-medium text-right ${expired ? 'text-red-600' : 'text-gray-700'
+          }`}
       >
         {displayValue} {expired && '⚠️'}
       </span>

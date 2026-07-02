@@ -202,7 +202,7 @@ const rememberAllCasesFilter = (filter) => {
   }
 };
 
-export default function AdminDashboard({ onNavigate = () => {} }) {
+export default function AdminDashboard({ onNavigate = () => { } }) {
   useStore((state) => state.stats);
 
   const getStats = useStore((state) => state.getStats);
@@ -232,11 +232,22 @@ export default function AdminDashboard({ onNavigate = () => {} }) {
       trend: '+3 this month',
     },
     {
-      label: 'Registered Vehicles',
-      value: safeNumber(stats.totalVehicles),
+      label: 'STVES Registered Vehicles',
+      value: safeNumber(stats.stvesRegisteredVehicles ?? stats.totalVehicles),
       icon: Car,
       color: 'bg-green-50 text-green-600',
-      trend: `${safeNumber(stats.activeVehicles)} active`,
+      trend: `${safeNumber(
+        stats.activeStvesRegisteredVehicles ?? stats.activeVehicles
+      )} active in STVES`,
+    },
+    {
+      label: 'BRTA Vehicle Records',
+      value: safeNumber(stats.brtaVehicleRecords ?? stats.totalBrtaVehicles),
+      icon: Car,
+      color: 'bg-emerald-50 text-emerald-600',
+      trend: `${safeNumber(
+        stats.activeBrtaVehicleRecords ?? stats.activeBrtaVehicles
+      )} active BRTA records`,
     },
     {
       label: 'Total Cases',

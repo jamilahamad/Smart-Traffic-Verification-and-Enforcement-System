@@ -21,8 +21,16 @@ const getDashboard = async () => {
     ...analytics,
     summary: {
       users: analytics.totalUsers,
-      vehicles: analytics.totalVehicles + analytics.totalBrtaVehicles,
-      licenses: analytics.totalLicenses + analytics.totalBrtaLicenses,
+
+      vehicles: analytics.totalBrtaVehicles,
+      brtaVehicleRecords: analytics.totalBrtaVehicles,
+      activeBrtaVehicles: analytics.activeBrtaVehicles,
+      stvesRegisteredVehicles: analytics.totalVehicles,
+      activeStvesRegisteredVehicles: analytics.activeVehicles,
+
+      licenses: analytics.totalBrtaLicenses,
+      stvesLicenses: analytics.totalLicenses,
+
       violations: analytics.totalViolations,
       pendingCases: analytics.pendingCases,
       paidRevenue: analytics.paidRevenue,
@@ -235,10 +243,10 @@ const uploadBrtaDriverPhoto = async (brtaDriverId, file) => {
   const appLicenses =
     licenseNumbers.length > 0
       ? await DrivingLicense.find({
-          licenseNumber: { $in: licenseNumbers },
-        })
-          .select("driver licenseNumber")
-          .lean()
+        licenseNumber: { $in: licenseNumbers },
+      })
+        .select("driver licenseNumber")
+        .lean()
       : [];
 
   const linkedDriverUserIds = appLicenses

@@ -18,7 +18,7 @@ import '../../styles/BlacklistPage.css';
 const tabOptions = [
   {
     id: 'vehicles',
-    label: 'Vehicles',
+    label: 'BRTA Vehicles',
     icon: Car,
   },
   {
@@ -221,9 +221,9 @@ export default function BlacklistPage() {
 
   const summaryCards = [
     {
-      label: 'Total Vehicles',
+      label: 'BRTA Enforcement Vehicles',
       value: vehicleList.length,
-      note: 'Available for enforcement action',
+      note: 'Available from BRTA registry',
       icon: Car,
       tone: 'blue',
     },
@@ -341,7 +341,7 @@ export default function BlacklistPage() {
           </h1>
 
           <p className="text-sm text-gray-500 mt-1">
-            Manage vehicle and user restrictions from one secure admin workspace.
+            Manage BRTA vehicle and user restrictions from one secure admin workspace.
           </p>
         </div>
 
@@ -403,11 +403,10 @@ export default function BlacklistPage() {
                     key={tab.id}
                     type="button"
                     onClick={() => resetFiltersForTab(tab.id)}
-                    className={`blacklist-tab-button px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${
-                      activeTab === tab.id
-                        ? 'bg-[#0f4c81] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    className={`blacklist-tab-button px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${activeTab === tab.id
+                      ? 'bg-[#0f4c81] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                   >
                     <Icon size={16} />
                     {tab.label} ({total} total)
@@ -442,11 +441,10 @@ export default function BlacklistPage() {
                 key={status}
                 type="button"
                 onClick={() => setStatusFilter(status)}
-                className={`blacklist-status-filter-button rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                  statusFilter === status
-                    ? 'bg-[#0f4c81] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`blacklist-status-filter-button rounded-lg px-3 py-1.5 text-xs font-semibold ${statusFilter === status
+                  ? 'bg-[#0f4c81] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 {formatLabel(status)}
               </button>
@@ -471,7 +469,7 @@ export default function BlacklistPage() {
 
       <p className="blacklist-page-count text-xs text-gray-400">
         Showing {activeListCount} of {activeTotalCount}{' '}
-        {activeTab === 'vehicles' ? 'vehicles' : 'users'}.
+        {activeTab === 'vehicles' ? 'BRTA vehicles' : 'users'}.
       </p>
 
       {pendingAction && (
@@ -539,7 +537,7 @@ function VehicleTable({ vehicles, updatingId, openConfirmation }) {
   return (
     <section className="blacklist-table-card bg-white rounded-2xl border border-gray-100 overflow-hidden">
       <div className="blacklist-table-toolbar flex flex-col gap-1 border-b border-gray-100 bg-gray-50/70 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-semibold text-gray-700">Vehicle Enforcement List</p>
+        <p className="text-sm font-semibold text-gray-700">BRTA Vehicle Enforcement List</p>
 
         <p className="blacklist-scroll-hint text-xs text-gray-400">
           Scroll horizontally on small screens to see all columns.
@@ -611,9 +609,8 @@ function VehicleTable({ vehicles, updatingId, openConfirmation }) {
 
                     <td className="px-5 py-3">
                       <span
-                        className={`blacklist-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${
-                          statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
-                        }`}
+                        className={`blacklist-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
+                          }`}
                       >
                         {formatLabel(status)}
                       </span>
@@ -703,9 +700,8 @@ function UserTable({ users, updatingId, openConfirmation }) {
 
                     <td className="px-5 py-3">
                       <span
-                        className={`blacklist-role-badge px-2 py-0.5 rounded-full text-xs font-medium ${
-                          roleBadgeColors[role] || 'bg-gray-100 text-gray-600'
-                        }`}
+                        className={`blacklist-role-badge px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeColors[role] || 'bg-gray-100 text-gray-600'
+                          }`}
                       >
                         {formatLabel(role)}
                       </span>
@@ -717,9 +713,8 @@ function UserTable({ users, updatingId, openConfirmation }) {
 
                     <td className="px-5 py-3">
                       <span
-                        className={`blacklist-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${
-                          statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
-                        }`}
+                        className={`blacklist-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
+                          }`}
                       >
                         {formatLabel(status)}
                       </span>

@@ -194,17 +194,12 @@ export default function AnalyticsPage() {
   const activeAppVehicles = safeNumber(stats.activeVehicles);
   const activeBrtaVehicles = safeNumber(stats.activeBrtaVehicles);
 
-  const totalVehicleRecords = Math.max(
-    safeNumber(stats.totalVehicleRecords),
-    appVehicleTotal,
-    brtaVehicleTotal,
-    activeAppVehicles,
-    activeBrtaVehicles
+  const totalVehicleRecords = safeNumber(
+    stats.brtaVehicleRecords ?? stats.totalVehicleRecords ?? brtaVehicleTotal
   );
 
-  const activeVehicleRecords = Math.min(
-    Math.max(safeNumber(stats.activeVehicleRecords), activeAppVehicles, activeBrtaVehicles),
-    totalVehicleRecords || Math.max(activeAppVehicles, activeBrtaVehicles)
+  const activeVehicleRecords = safeNumber(
+    stats.activeBrtaVehicleRecords ?? stats.activeVehicleRecords ?? activeBrtaVehicles
   );
 
   const totalFines = safeNumber(
@@ -259,7 +254,7 @@ export default function AnalyticsPage() {
       value: totalVehicleRecords,
       icon: Car,
       color: 'bg-green-50 text-green-600',
-      note: `${appVehicleTotal} STVES registered • ${activeVehicleRecords} active`,
+      note: `${appVehicleTotal} STVES registered • ${activeVehicleRecords} active BRTA`,
     },
     {
       label: 'Total Cases',
