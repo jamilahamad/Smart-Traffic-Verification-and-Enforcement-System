@@ -77,7 +77,7 @@ const getRegisterFailureMessage = (result) => {
   return isFailureMessage ? message : '';
 };
 
-export default function LoginPage({ onBack }) {
+export default function LoginPage({ onBack, onLoginSuccess }) {
   const setCurrentUser = useStore((state) => state.setCurrentUser);
   const fetchDashboardData = useStore((state) => state.fetchDashboardData);
 
@@ -201,127 +201,131 @@ export default function LoginPage({ onBack }) {
 
 
   const submitAuthRequest = async (endpoint, payload) => {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
-  let data = {};
+    let data = {};
 
-  try {
-    data = await response.json();
-  } catch {
-    data = {};
-  }
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
 
-  if (!response.ok) {
-    throw new Error(
-      data?.message ||
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
         data?.error ||
         data?.errors?.[0]?.message ||
         `Request failed with status ${response.status}.`
-    );
-  }
+      );
+    }
 
-  if (data?.success === false) {
-    throw new Error(data.message || 'Request failed.');
-  }
+    if (data?.success === false) {
+      throw new Error(data.message || 'Request failed.');
+    }
 
-  return data?.data || data;
-};
+    return data?.data || data;
+  };
 
 
 
   const handleLogin = async (event) => {
-  event.preventDefault();
-  event.stopPropagation();
+    event.preventDefault();
+    event.stopPropagation();
 
-  setError('');
-  setSuccess('');
+    setError('');
+    setSuccess('');
 
-  if (!validateLoginForm()) {
-    setError('Please fix the highlighted fields and try again.');
-    return;
-  }
-
-  const payload = {
-    email: loginForm.email.trim(),
-    password: loginForm.password.trim(),
-  };
-
-  try {
-    setLoading(true);
-
-    const data = await submitAuthRequest('/auth/login', payload);
-
-    if (!data?.token || !data?.user) {
-      throw new Error('Invalid email or password.');
+    if (!validateLoginForm()) {
+      setError('Please fix the highlighted fields and try again.');
+      return;
     }
 
-    tokenStorage.setToken(data.token);
-    tokenStorage.setUser(data.user);
-    setCurrentUser(data.user);
+    const payload = {
+      email: loginForm.email.trim(),
+      password: loginForm.password.trim(),
+    };
 
     try {
-      await fetchDashboardData();
-    } catch {
-      // Dashboard data fail korleo login success thakbe
+      setLoading(true);
+
+      const data = await submitAuthRequest('/auth/login', payload);
+
+      if (!data?.token || !data?.user) {
+        throw new Error('Invalid email or password.');
+      }
+
+      tokenStorage.setToken(data.token);
+      tokenStorage.setUser(data.user);
+      setCurrentUser(data.user);
+
+      try {
+        await fetchDashboardData();
+      } catch {
+        // Dashboard data fail korleo login success thakbe
+      }
+
+      if (typeof onLoginSuccess === 'function') {
+        onLoginSuccess();
+      }
+    } catch (error) {
+      setError(error?.message || 'Invalid email or password.');
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    setError(error?.message || 'Invalid email or password.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const handleRegister = async (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-
-  setError('');
-  setSuccess('');
-
-  const payload = {
-    name: registerForm.name.trim(),
-    email: registerForm.email.trim(),
-    password: registerForm.password.trim(),
-    phone: registerForm.phone.trim(),
-    nid: registerForm.nid.trim(),
-    role: registerForm.role,
   };
 
-  if (!validateRegisterForm(payload)) {
-    setError('Please fix the highlighted fields and try again.');
-    return;
-  }
+  const handleRegister = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
 
-  try {
-    setLoading(true);
+    setError('');
+    setSuccess('');
 
-    await submitAuthRequest('/auth/register', payload);
+    const payload = {
+      name: registerForm.name.trim(),
+      email: registerForm.email.trim(),
+      password: registerForm.password.trim(),
+      phone: registerForm.phone.trim(),
+      nid: registerForm.nid.trim(),
+      role: registerForm.role,
+    };
 
-    setSuccess('Registration successful! Please login.');
-    setMode('login');
+    if (!validateRegisterForm(payload)) {
+      setError('Please fix the highlighted fields and try again.');
+      return;
+    }
 
-    setLoginForm({
-      email: payload.email,
-      password: '',
-    });
+    try {
+      setLoading(true);
 
-    setRegisterForm(initialRegisterForm);
-    setFieldErrors(initialFieldErrors);
-  } catch (error) {
-    setError(
-      error?.message ||
+      await submitAuthRequest('/auth/register', payload);
+
+      setSuccess('Registration successful! Please login.');
+      setMode('login');
+
+      setLoginForm({
+        email: payload.email,
+        password: '',
+      });
+
+      setRegisterForm(initialRegisterForm);
+      setFieldErrors(initialFieldErrors);
+    } catch (error) {
+      setError(
+        error?.message ||
         'BRTA information did not match. Please check your name, phone, and NID.'
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="login-wrapper min-h-screen bg-gradient-to-br from-[#0d1b2a] via-[#1b2838] to-[#0f4c81]">
       <header className="login-brand-bar">

@@ -515,8 +515,28 @@ const useStore = create((set, get) => ({
 
   setCurrentUser: (user) => {
     const mappedUser = user ? mapUser(user) : null;
-    tokenStorage.setUser(mappedUser);
-    set({ currentUser: mappedUser });
+
+    if (mappedUser) {
+      tokenStorage.setUser(mappedUser);
+
+      set({
+        currentUser: mappedUser,
+        isAuthenticated: Boolean(tokenStorage.getToken()),
+        authLoading: false,
+        apiError: '',
+      });
+
+      return;
+    }
+
+    tokenStorage.removeToken();
+
+    set({
+      currentUser: null,
+      isAuthenticated: false,
+      authLoading: false,
+      apiError: '',
+    });
   },
 
   initAuth: async () => {
