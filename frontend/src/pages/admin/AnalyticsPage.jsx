@@ -52,10 +52,12 @@ const getMonthLabel = (dateValue) => {
 
 const getViolationType = (item) => {
   return (
+    item.violationCode ||
+    item.ruleCode ||
     item.violationLabel ||
     item.violationType ||
     item.description ||
-    'Unknown Violation'
+    'Other'
   );
 };
 
@@ -63,7 +65,7 @@ const getTopItems = (items, keyGetter, limit = 5) => {
   const counter = {};
 
   items.forEach((item) => {
-    const key = keyGetter(item);
+    const key = keyGetter(item) || 'Other';
     counter[key] = (counter[key] || 0) + 1;
   });
 
@@ -76,13 +78,29 @@ const getTopItems = (items, keyGetter, limit = 5) => {
     .slice(0, limit);
 };
 
-const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+const normalizeBreakdownItems = (items = [], limit = 6) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map((item) => ({
+      label: item.label || item._id || item.type || item.name || 'Other',
+      value: safeNumber(item.value ?? item.count ?? item.total ?? 0),
+      totalFine: safeNumber(item.totalFine ?? item.fineAmount ?? 0),
+    }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+};
+
+const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec'];
 
 const getMonthlyCases = (items) => {
   const counter = {};
 
   items.forEach((item) => {
-    const month = getMonthLabel(item.createdAt || item.issueDate || item.date);
+    const month = getMonthLabel(item.createdAt || item.issuedAt || item.issueDate || item.date);
     counter[month] = (counter[month] || 0) + 1;
   });
 
@@ -103,8 +121,40 @@ const getMonthlyCases = (items) => {
     });
 };
 
+const normalizeMonthlyItems = (items = []) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map((item) => ({
+      label: item.label || item.month || item._id || 'Unknown',
+      value: safeNumber(item.value ?? item.count ?? item.total ?? 0),
+      monthNumber: safeNumber(item.monthNumber),
+    }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => {
+      if (a.monthNumber && b.monthNumber) {
+        return a.monthNumber - b.monthNumber;
+      }
+
+      const aIndex = monthOrder.indexOf(a.label);
+      const bIndex = monthOrder.indexOf(b.label);
+
+      if (aIndex === -1 || bIndex === -1) {
+        return a.label.localeCompare(b.label);
+      }
+
+      return aIndex - bIndex;
+    });
+};
+
 const getStatusCount = (items, status) => {
   return items.filter((item) => item.status === status).length;
+};
+
+const getPaymentCount = (items, status) => {
+  return items.filter((item) => item.paymentStatus === status || item.status === status).length;
 };
 
 const getMaxValue = (items) => {
@@ -125,33 +175,68 @@ export default function AnalyticsPage() {
   const logList = Array.isArray(activityLogs) ? activityLogs : [];
 
   const totalCases = safeNumber(stats.totalViolations || violationList.length);
-  const pendingCases = safeNumber(stats.pendingCases || getStatusCount(violationList, 'pending'));
-  const approvedCases = safeNumber(stats.approvedCases || getStatusCount(violationList, 'approved'));
-  const dismissedCases = safeNumber(stats.dismissedCases || getStatusCount(violationList, 'dismissed'));
-  const paidCases = safeNumber(stats.paidCases || getStatusCount(violationList, 'paid'));
+  const pendingCases = safeNumber(stats.pendingCases ?? getStatusCount(violationList, 'pending'));
+  const approvedCases = safeNumber(stats.approvedCases ?? getStatusCount(violationList, 'approved'));
+  const dismissedCases = safeNumber(stats.dismissedCases ?? getStatusCount(violationList, 'dismissed'));
+  const paidCases = safeNumber(stats.paidPaymentCases ?? stats.paidCases ?? getPaymentCount(violationList, 'paid'));
   const unpaidCases = safeNumber(
-    stats.unpaidCases ||
-      violationList.filter((item) => item.status === 'approved' || item.status === 'unpaid').length
+    stats.unpaidCases ??
+    violationList.filter(
+      (item) =>
+        item.paymentStatus !== 'paid' &&
+        item.status !== 'paid' &&
+        item.status !== 'dismissed'
+    ).length
+  );
+
+  const appVehicleTotal = safeNumber(stats.totalVehicles);
+  const brtaVehicleTotal = safeNumber(stats.totalBrtaVehicles);
+  const activeAppVehicles = safeNumber(stats.activeVehicles);
+  const activeBrtaVehicles = safeNumber(stats.activeBrtaVehicles);
+
+  const totalVehicleRecords = safeNumber(
+    stats.brtaVehicleRecords ?? stats.totalVehicleRecords ?? brtaVehicleTotal
+  );
+
+  const activeVehicleRecords = safeNumber(
+    stats.activeBrtaVehicleRecords ?? stats.activeVehicleRecords ?? activeBrtaVehicles
   );
 
   const totalFines = safeNumber(
-    stats.totalFines ||
-      violationList.reduce((sum, item) => sum + safeNumber(item.fineAmount), 0)
+    stats.totalFines ??
+    violationList.reduce((sum, item) => sum + safeNumber(item.fineAmount), 0)
   );
 
-  const paidFineEstimate = violationList
-    .filter((item) => item.status === 'paid' || item.paymentStatus === 'paid')
-    .reduce((sum, item) => sum + safeNumber(item.fineAmount), 0);
+  const paidFineEstimate = safeNumber(
+    stats.paidRevenue ??
+    violationList
+      .filter((item) => item.status === 'paid' || item.paymentStatus === 'paid')
+      .reduce((sum, item) => sum + safeNumber(item.fineAmount), 0)
+  );
 
-  const unpaidFineEstimate = Math.max(totalFines - paidFineEstimate, 0);
+  const unpaidFineEstimate = safeNumber(
+    stats.unpaidFines ?? Math.max(totalFines - paidFineEstimate, 0)
+  );
 
   const violationTypeData = useMemo(() => {
+    const backendBreakdown = normalizeBreakdownItems(stats.violationTypeBreakdown, 6);
+
+    if (backendBreakdown.length > 0) {
+      return backendBreakdown;
+    }
+
     return getTopItems(violationList, getViolationType, 6);
-  }, [violationList]);
+  }, [stats.violationTypeBreakdown, violationList]);
 
   const monthlyCaseData = useMemo(() => {
+    const backendMonthly = normalizeMonthlyItems(stats.monthlyCaseTrend);
+
+    if (backendMonthly.length > 0) {
+      return backendMonthly;
+    }
+
     return getMonthlyCases(violationList);
-  }, [violationList]);
+  }, [stats.monthlyCaseTrend, violationList]);
 
   const maxViolationTypeValue = getMaxValue(violationTypeData);
   const maxMonthlyCaseValue = getMaxValue(monthlyCaseData);
@@ -165,11 +250,11 @@ export default function AnalyticsPage() {
       note: `${safeNumber(stats.totalPolice)} police officers`,
     },
     {
-      label: 'Total Vehicles',
-      value: safeNumber(stats.totalVehicles),
+      label: 'BRTA Vehicle Records',
+      value: totalVehicleRecords,
       icon: Car,
       color: 'bg-green-50 text-green-600',
-      note: `${safeNumber(stats.activeVehicles)} active vehicles`,
+      note: `${appVehicleTotal} STVES registered • ${activeVehicleRecords} active BRTA`,
     },
     {
       label: 'Total Cases',
@@ -189,7 +274,7 @@ export default function AnalyticsPage() {
 
   const caseStatusCards = [
     {
-      label: 'Pending',
+      label: 'Pending Review',
       value: pendingCases,
       percent: getPercent(pendingCases, totalCases),
       icon: Clock3,
@@ -197,7 +282,7 @@ export default function AnalyticsPage() {
       badge: 'bg-orange-100 text-orange-700',
     },
     {
-      label: 'Approved',
+      label: 'Approved Cases',
       value: approvedCases,
       percent: getPercent(approvedCases, totalCases),
       icon: CheckCircle,
@@ -213,7 +298,7 @@ export default function AnalyticsPage() {
       badge: 'bg-red-100 text-red-700',
     },
     {
-      label: 'Paid',
+      label: 'Paid Payments',
       value: paidCases,
       percent: getPercent(paidCases, totalCases),
       icon: CreditCard,
@@ -265,6 +350,8 @@ export default function AnalyticsPage() {
             type="button"
             onClick={handleRefresh}
             disabled={isLoading}
+            title="Refresh analytics data"
+            aria-label="Refresh analytics data"
             className="analytics-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
           >
             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
@@ -348,7 +435,7 @@ export default function AnalyticsPage() {
             <div>
               <h2 className="font-semibold text-gray-800">Monthly Case Trend</h2>
               <p className="text-xs text-gray-400 mt-0.5">
-                Number of E-Challan cases by month
+                Number of E-Challan cases by available monthly records
               </p>
             </div>
 
@@ -417,7 +504,7 @@ export default function AnalyticsPage() {
               {formatMoney(unpaidFineEstimate)}
             </p>
             <p className="text-xs text-blue-100 mt-1">
-              Based on approved/unpaid case data.
+              Based on unpaid and not-dismissed case data.
             </p>
           </div>
         </article>
@@ -428,7 +515,7 @@ export default function AnalyticsPage() {
           <div>
             <h2 className="font-semibold text-gray-800">Top Violation Types</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Most frequent violation categories
+              Most frequent violation categories from backend analytics
             </p>
           </div>
 
