@@ -386,251 +386,255 @@ export default function ManageVehiclesPage() {
         </section>
       )}
 
-      <section className="manage-vehicles-stats-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-        {vehicleStats.map((stat) => {
-          const Icon = stat.icon;
+      {!isLoading && (
+        <>
+          <section className="manage-vehicles-stats-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+            {vehicleStats.map((stat) => {
+              const Icon = stat.icon;
 
-          return (
-            <article
-              key={stat.label}
-              className={`manage-vehicles-stat-card manage-vehicles-stat-card-${stat.tone} bg-white rounded-2xl border border-gray-100 p-4`}
-            >
-              <div className="manage-vehicles-stat-content flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {stat.label}
-                  </p>
+              return (
+                <article
+                  key={stat.label}
+                  className={`manage-vehicles-stat-card manage-vehicles-stat-card-${stat.tone} bg-white rounded-2xl border border-gray-100 p-4`}
+                >
+                  <div className="manage-vehicles-stat-content flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                        {stat.label}
+                      </p>
 
-                  <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                    {stat.value}
-                  </h2>
+                      <h2 className="text-2xl font-bold text-gray-800 mt-1">
+                        {stat.value}
+                      </h2>
 
-                  <p className="text-xs text-gray-500 mt-1">{stat.note}</p>
-                </div>
+                      <p className="text-xs text-gray-500 mt-1">{stat.note}</p>
+                    </div>
 
-                <div className="manage-vehicles-stat-icon rounded-2xl p-2.5">
-                  <Icon size={20} />
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </section>
-
-      <section className="manage-vehicles-filter-card bg-white rounded-2xl border border-gray-100 p-4">
-        <div className="manage-vehicles-filter-row flex flex-col sm:flex-row gap-3">
-          <div className="manage-vehicles-search-wrap relative flex-1">
-            <Search
-              size={18}
-              className="manage-vehicles-search-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              type="text"
-              value={searchQ}
-              onChange={(event) => setSearchQ(event.target.value)}
-              placeholder="Search by plate, owner, brand, model, type, color, engine, or chassis..."
-              className="manage-vehicles-search-input w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-            />
-          </div>
-
-          <div className="manage-vehicles-status-filters flex gap-2 flex-wrap">
-            {statusFilters.map((status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => setStatusFilter(status)}
-                className={`manage-vehicles-filter-button px-3 py-1.5 rounded-lg text-xs font-medium ${statusFilter === status
-                  ? 'bg-[#0f4c81] text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-              >
-                {formatLabel(status)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {filteredVehicles.length === 0 ? (
-        <section className="manage-vehicles-empty-card bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
-          <Car size={42} className="mx-auto mb-3 opacity-30" />
-
-          <p className="text-sm font-medium">No vehicles found</p>
-
-          <p className="text-xs mt-1">
-            Try changing the search keyword or selected status filter.
-          </p>
-        </section>
-      ) : (
-        <section className="manage-vehicles-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-          {filteredVehicles.map((vehicle) => {
-            const vehicleId = getVehicleId(vehicle);
-            const plate = getVehiclePlate(vehicle);
-            const isUpdating = updatingId === vehicleId;
-            const status = vehicle.status || 'active';
-            const safetyScore = Number(vehicle.safetyScore || 0);
-            const assignedDriverCount = getAssignedDriverCount(vehicle);
-            const brtaVerified = isBrtaVerifiedVehicle(vehicle);
-            const issueCount = Array.isArray(vehicle.issues) ? vehicle.issues.length : 0;
-
-            return (
-              <article
-                key={vehicleId || plate}
-                className="manage-vehicles-card bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow"
-              >
-                <div className="manage-vehicles-card-head flex items-start justify-between mb-3">
-                  <div className="manage-vehicles-plate-block flex items-center gap-2 min-w-0">
-                    <Car size={18} className="text-gray-400 shrink-0" />
-
-                    <span className="font-bold text-gray-800 truncate">
-                      {plate}
-                    </span>
+                    <div className="manage-vehicles-stat-icon rounded-2xl p-2.5">
+                      <Icon size={20} />
+                    </div>
                   </div>
+                </article>
+              );
+            })}
+          </section>
 
-                  <span
-                    className={`manage-vehicles-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
+          <section className="manage-vehicles-filter-card bg-white rounded-2xl border border-gray-100 p-4">
+            <div className="manage-vehicles-filter-row flex flex-col sm:flex-row gap-3">
+              <div className="manage-vehicles-search-wrap relative flex-1">
+                <Search
+                  size={18}
+                  className="manage-vehicles-search-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+
+                <input
+                  type="text"
+                  value={searchQ}
+                  onChange={(event) => setSearchQ(event.target.value)}
+                  placeholder="Search by plate, owner, brand, model, type, color, engine, or chassis..."
+                  className="manage-vehicles-search-input w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+                />
+              </div>
+
+              <div className="manage-vehicles-status-filters flex gap-2 flex-wrap">
+                {statusFilters.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setStatusFilter(status)}
+                    className={`manage-vehicles-filter-button px-3 py-1.5 rounded-lg text-xs font-medium ${statusFilter === status
+                      ? 'bg-[#0f4c81] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                   >
                     {formatLabel(status)}
-                  </span>
-                </div>
-
-                <div className="manage-vehicles-card-body space-y-1.5 text-sm">
-                  <div className="manage-vehicles-badge-row flex flex-wrap items-center gap-2">
-                    {brtaVerified && (
-                      <span className="manage-vehicles-source-badge inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">
-                        <ShieldCheck size={12} />
-                        BRTA Verified
-                      </span>
-                    )}
-
-                    {vehicle.qrCode && (
-                      <span className="manage-vehicles-qr-badge inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1 text-[11px] font-semibold text-gray-600">
-                        QR Ready
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-gray-600">
-                    {vehicle.brand || 'Unknown Brand'} {vehicle.model || ''}
-                    {vehicle.year ? ` (${vehicle.year})` : ''}
-                  </p>
-
-                  <p className="text-gray-400 text-xs">
-                    Owner: {vehicle.ownerName || 'N/A'}
-                  </p>
-
-                  <p className="text-gray-400 text-xs">
-                    Type: {vehicle.vehicleType || 'N/A'} | Color:{' '}
-                    {vehicle.color || 'N/A'}
-                  </p>
-
-                  <div className="manage-vehicles-safety-row flex items-center gap-2 mt-2">
-                    <span className="text-xs text-gray-400">Safety:</span>
-
-                    <div className="manage-vehicles-safety-track flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={`manage-vehicles-safety-fill h-full rounded-full ${getSafetyColorClass(
-                          safetyScore
-                        )}`}
-                        style={{ width: `${Math.min(Math.max(safetyScore, 0), 100)}%` }}
-                      />
-                    </div>
-
-                    <span className="text-xs font-medium text-gray-700">
-                      {safetyScore}
-                    </span>
-                  </div>
-
-                  <div className="manage-vehicles-mini-stats grid grid-cols-3 gap-2 pt-3">
-                    <div className="manage-vehicles-mini-stat rounded-xl bg-gray-50 px-3 py-2">
-                      <UsersRound size={14} className="text-[#0f4c81]" />
-                      <p className="mt-1 text-sm font-bold text-gray-800">{assignedDriverCount}</p>
-                      <p className="text-[10px] text-gray-400">Drivers</p>
-                    </div>
-
-                    <div className="manage-vehicles-mini-stat rounded-xl bg-gray-50 px-3 py-2">
-                      <AlertTriangle size={14} className={issueCount > 0 ? 'text-orange-600' : 'text-[#0f4c81]'} />
-                      <p className="mt-1 text-sm font-bold text-gray-800">{issueCount}</p>
-                      <p className="text-[10px] text-gray-400">Issues</p>
-                    </div>
-
-                    <div className="manage-vehicles-mini-stat rounded-xl bg-gray-50 px-3 py-2">
-                      <FileCheck2 size={14} className="text-[#0f4c81]" />
-                      <p className="mt-1 text-sm font-bold text-gray-800">{vehicle.qrCode ? 'Yes' : 'No'}</p>
-                      <p className="text-[10px] text-gray-400">QR</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="manage-vehicles-actions mt-4 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openDetailsModal(vehicle)}
-                    className="manage-vehicles-details-button flex-1 py-2 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-100 flex items-center justify-center gap-1"
-                    title="View vehicle document details"
-                    aria-label={`View details for ${plate}`}
-                  >
-                    <Eye size={14} />
-                    View Details
                   </button>
+                ))}
+              </div>
+            </div>
+          </section>
 
-                  {status !== 'active' && (
-                    <button
-                      type="button"
-                      disabled={isUpdating}
-                      onClick={() => openActionConfirmation(vehicle, 'activate')}
-                      className="manage-vehicles-icon-button p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50"
-                      title={`Activate ${plate}`}
-                      aria-label={`Activate ${plate}`}
-                    >
-                      {isUpdating ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <CheckCircle size={14} />
-                      )}
-                    </button>
-                  )}
+          {filteredVehicles.length === 0 ? (
+            <section className="manage-vehicles-empty-card bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
+              <Car size={42} className="mx-auto mb-3 opacity-30" />
 
-                  {status !== 'suspended' && (
-                    <button
-                      type="button"
-                      disabled={isUpdating}
-                      onClick={() => openActionConfirmation(vehicle, 'suspend')}
-                      className="manage-vehicles-icon-button p-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 disabled:opacity-50"
-                      title={`Suspend ${plate}`}
-                      aria-label={`Suspend ${plate}`}
-                    >
-                      {isUpdating ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <AlertTriangle size={14} />
-                      )}
-                    </button>
-                  )}
+              <p className="text-sm font-medium">No vehicles found</p>
 
-                  {status !== 'blacklisted' && (
-                    <button
-                      type="button"
-                      disabled={isUpdating}
-                      onClick={() => openActionConfirmation(vehicle, 'blacklist')}
-                      className="manage-vehicles-icon-button p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
-                      title={`Blacklist ${plate}`}
-                      aria-label={`Blacklist ${plate}`}
-                    >
-                      {isUpdating ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Ban size={14} />
+              <p className="text-xs mt-1">
+                Try changing the search keyword or selected status filter.
+              </p>
+            </section>
+          ) : (
+            <section className="manage-vehicles-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+              {filteredVehicles.map((vehicle) => {
+                const vehicleId = getVehicleId(vehicle);
+                const plate = getVehiclePlate(vehicle);
+                const isUpdating = updatingId === vehicleId;
+                const status = vehicle.status || 'active';
+                const safetyScore = Number(vehicle.safetyScore || 0);
+                const assignedDriverCount = getAssignedDriverCount(vehicle);
+                const brtaVerified = isBrtaVerifiedVehicle(vehicle);
+                const issueCount = Array.isArray(vehicle.issues) ? vehicle.issues.length : 0;
+
+                return (
+                  <article
+                    key={vehicleId || plate}
+                    className="manage-vehicles-card bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow"
+                  >
+                    <div className="manage-vehicles-card-head flex items-start justify-between mb-3">
+                      <div className="manage-vehicles-plate-block flex items-center gap-2 min-w-0">
+                        <Car size={18} className="text-gray-400 shrink-0" />
+
+                        <span className="font-bold text-gray-800 truncate">
+                          {plate}
+                        </span>
+                      </div>
+
+                      <span
+                        className={`manage-vehicles-status-badge px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[status] || 'bg-gray-100 text-gray-600'
+                          }`}
+                      >
+                        {formatLabel(status)}
+                      </span>
+                    </div>
+
+                    <div className="manage-vehicles-card-body space-y-1.5 text-sm">
+                      <div className="manage-vehicles-badge-row flex flex-wrap items-center gap-2">
+                        {brtaVerified && (
+                          <span className="manage-vehicles-source-badge inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700">
+                            <ShieldCheck size={12} />
+                            BRTA Verified
+                          </span>
+                        )}
+
+                        {vehicle.qrCode && (
+                          <span className="manage-vehicles-qr-badge inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1 text-[11px] font-semibold text-gray-600">
+                            QR Ready
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-gray-600">
+                        {vehicle.brand || 'Unknown Brand'} {vehicle.model || ''}
+                        {vehicle.year ? ` (${vehicle.year})` : ''}
+                      </p>
+
+                      <p className="text-gray-400 text-xs">
+                        Owner: {vehicle.ownerName || 'N/A'}
+                      </p>
+
+                      <p className="text-gray-400 text-xs">
+                        Type: {vehicle.vehicleType || 'N/A'} | Color:{' '}
+                        {vehicle.color || 'N/A'}
+                      </p>
+
+                      <div className="manage-vehicles-safety-row flex items-center gap-2 mt-2">
+                        <span className="text-xs text-gray-400">Safety:</span>
+
+                        <div className="manage-vehicles-safety-track flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`manage-vehicles-safety-fill h-full rounded-full ${getSafetyColorClass(
+                              safetyScore
+                            )}`}
+                            style={{ width: `${Math.min(Math.max(safetyScore, 0), 100)}%` }}
+                          />
+                        </div>
+
+                        <span className="text-xs font-medium text-gray-700">
+                          {safetyScore}
+                        </span>
+                      </div>
+
+                      <div className="manage-vehicles-mini-stats grid grid-cols-3 gap-2 pt-3">
+                        <div className="manage-vehicles-mini-stat rounded-xl bg-gray-50 px-3 py-2">
+                          <UsersRound size={14} className="text-[#0f4c81]" />
+                          <p className="mt-1 text-sm font-bold text-gray-800">{assignedDriverCount}</p>
+                          <p className="text-[10px] text-gray-400">Drivers</p>
+                        </div>
+
+                        <div className="manage-vehicles-mini-stat rounded-xl bg-gray-50 px-3 py-2">
+                          <AlertTriangle size={14} className={issueCount > 0 ? 'text-orange-600' : 'text-[#0f4c81]'} />
+                          <p className="mt-1 text-sm font-bold text-gray-800">{issueCount}</p>
+                          <p className="text-[10px] text-gray-400">Issues</p>
+                        </div>
+
+                        <div className="manage-vehicles-mini-stat rounded-xl bg-gray-50 px-3 py-2">
+                          <FileCheck2 size={14} className="text-[#0f4c81]" />
+                          <p className="mt-1 text-sm font-bold text-gray-800">{vehicle.qrCode ? 'Yes' : 'No'}</p>
+                          <p className="text-[10px] text-gray-400">QR</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="manage-vehicles-actions mt-4 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openDetailsModal(vehicle)}
+                        className="manage-vehicles-details-button flex-1 py-2 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-100 flex items-center justify-center gap-1"
+                        title="View vehicle document details"
+                        aria-label={`View details for ${plate}`}
+                      >
+                        <Eye size={14} />
+                        View Details
+                      </button>
+
+                      {status !== 'active' && (
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={() => openActionConfirmation(vehicle, 'activate')}
+                          className="manage-vehicles-icon-button p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50"
+                          title={`Activate ${plate}`}
+                          aria-label={`Activate ${plate}`}
+                        >
+                          {isUpdating ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <CheckCircle size={14} />
+                          )}
+                        </button>
                       )}
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </section>
+
+                      {status !== 'suspended' && (
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={() => openActionConfirmation(vehicle, 'suspend')}
+                          className="manage-vehicles-icon-button p-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 disabled:opacity-50"
+                          title={`Suspend ${plate}`}
+                          aria-label={`Suspend ${plate}`}
+                        >
+                          {isUpdating ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <AlertTriangle size={14} />
+                          )}
+                        </button>
+                      )}
+
+                      {status !== 'blacklisted' && (
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={() => openActionConfirmation(vehicle, 'blacklist')}
+                          className="manage-vehicles-icon-button p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                          title={`Blacklist ${plate}`}
+                          aria-label={`Blacklist ${plate}`}
+                        >
+                          {isUpdating ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Ban size={14} />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </section>
+          )}
+        </>
       )}
 
       {selectedDetailVehicle && (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import useStore from './store/useStore';
 import { canAccessPage } from './constants/pages';
@@ -41,19 +41,6 @@ import './styles/AppLayout.css';
 
 const publicPages = ['landing', 'login', 'public-verify'];
 
-const getInitialPage = () => {
-  const params = new URLSearchParams(window.location.search);
-  const path = window.location.pathname.toLowerCase();
-
-  const hasQR = params.get('qr') || params.get('code');
-
-  if (hasQR || path.includes('verify')) {
-    return 'public-verify';
-  }
-
-  return 'landing';
-};
-
 const normalizePage = (page) => {
   const aliases = {
     cases: 'my-cases',
@@ -63,6 +50,42 @@ const normalizePage = (page) => {
   };
 
   return aliases[page] || page || 'dashboard';
+};
+
+const buildPageUrl = (page) => {
+  const nextPage = normalizePage(page);
+  const url = new URL(window.location.href);
+
+  url.pathname = '/';
+  url.hash = '';
+  url.searchParams.delete('qr');
+  url.searchParams.delete('code');
+
+  if (nextPage === 'landing') {
+    url.searchParams.delete('page');
+  } else {
+    url.searchParams.set('page', nextPage);
+  }
+
+  return `${url.pathname}${url.search}${url.hash}`;
+};
+
+const getInitialPage = () => {
+  const params = new URLSearchParams(window.location.search);
+  const path = window.location.pathname.toLowerCase();
+
+  const pageFromUrl = params.get('page');
+  const hasQR = params.get('qr') || params.get('code');
+
+  if (hasQR || path.includes('verify')) {
+    return 'public-verify';
+  }
+
+  if (pageFromUrl) {
+    return normalizePage(pageFromUrl);
+  }
+
+  return 'landing';
 };
 
 export default function App() {
@@ -75,18 +98,46 @@ export default function App() {
 
   const role = currentUser?.role || 'driver';
 
+  const setPageWithBrowserHistory = useCallback((page, mode = 'push') => {
+    const nextPage = normalizePage(page);
+    const nextUrl = buildPageUrl(nextPage);
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+    if (nextUrl !== currentUrl) {
+      if (mode === 'replace') {
+        window.history.replaceState({ page: nextPage }, '', nextUrl);
+      } else {
+        window.history.pushState({ page: nextPage }, '', nextUrl);
+      }
+    }
+
+    setCurrentPage(nextPage);
+  }, []);
+
   useEffect(() => {
     initAuth();
   }, [initAuth]);
 
   useEffect(() => {
+    const handleBrowserBackForward = () => {
+      setCurrentPage(getInitialPage());
+    };
+
+    window.addEventListener('popstate', handleBrowserBackForward);
+
+    return () => {
+      window.removeEventListener('popstate', handleBrowserBackForward);
+    };
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated && publicPages.includes(currentPage)) {
-      setCurrentPage('dashboard');
+      setPageWithBrowserHistory('dashboard', 'replace');
       return;
     }
 
     if (!isAuthenticated && !publicPages.includes(currentPage)) {
-      setCurrentPage('landing');
+      setPageWithBrowserHistory('landing', 'replace');
       return;
     }
 
@@ -95,27 +146,30 @@ export default function App() {
       !publicPages.includes(currentPage) &&
       !canAccessPage(role, currentPage)
     ) {
-      setCurrentPage('dashboard');
+      setPageWithBrowserHistory('dashboard', 'replace');
     }
-  }, [isAuthenticated, currentPage, role]);
+  }, [isAuthenticated, currentPage, role, setPageWithBrowserHistory]);
 
-  const handleNavigate = (page) => {
-    const nextPage = normalizePage(page);
+  const handleNavigate = useCallback(
+    (page) => {
+      const nextPage = normalizePage(page);
 
-    if (isAuthenticated && !publicPages.includes(nextPage) && !canAccessPage(role, nextPage)) {
-      setCurrentPage('dashboard');
-      return;
-    }
+      if (isAuthenticated && !publicPages.includes(nextPage) && !canAccessPage(role, nextPage)) {
+        setPageWithBrowserHistory('dashboard');
+        return;
+      }
 
-    setCurrentPage(nextPage);
-  };
+      setPageWithBrowserHistory(nextPage);
+    },
+    [isAuthenticated, role, setPageWithBrowserHistory]
+  );
 
   const commonPageProps = useMemo(
     () => ({
       onNavigate: handleNavigate,
       currentPage,
     }),
-    [currentPage]
+    [handleNavigate, currentPage]
   );
 
   const renderDashboardByRole = () => {
