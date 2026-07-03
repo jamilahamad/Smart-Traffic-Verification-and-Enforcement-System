@@ -376,6 +376,42 @@ const api = {
       )}`
     ),
 
+  // ---------------- VIOLATION TYPE MANAGEMENT ----------------
+  getViolationTypes: (params = {}) =>
+    request('/violation-types', {
+      params,
+    }),
+
+  getActiveViolationTypes: (params = {}) =>
+    request('/violation-types/active', {
+      params,
+    }),
+
+  getViolationTypeById: (id) => request(`/violation-types/${id}`),
+
+  createViolationType: (payload) =>
+    request('/violation-types', {
+      method: 'POST',
+      body: payload,
+    }),
+
+  updateViolationType: (id, payload) =>
+    request(`/violation-types/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    }),
+
+  updateViolationTypeStatus: (id, status) =>
+    request(`/violation-types/${id}/status`, {
+      method: 'PATCH',
+      body: { status },
+    }),
+
+  deleteViolationType: (id) =>
+    request(`/violation-types/${id}`, {
+      method: 'DELETE',
+    }),
+
   // ---------------- VIOLATIONS / E-CHALLAN ----------------
   getViolations: () => request('/violations'),
 

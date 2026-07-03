@@ -12,6 +12,7 @@ const adminRoutes = require("./routes/admin.routes");
 const driverRoutes = require("./routes/driver.routes");
 const automationRoutes = require("./routes/automation.routes");
 const licenseRenewalRoutes = require("./routes/licenseRenewal.routes");
+const violationTypeRoutes = require("./routes/violationType.routes");
 
 const express = require("express");
 const cors = require("cors");
@@ -72,6 +73,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/driver", driverRoutes);
 app.use("/api/automation", automationRoutes);
 app.use("/api/license-renewals", licenseRenewalRoutes);
+app.use("/api/violation-types", violationTypeRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);

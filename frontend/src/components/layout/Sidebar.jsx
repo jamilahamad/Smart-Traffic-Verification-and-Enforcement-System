@@ -57,6 +57,12 @@ const menuItems = [
     roles: ['admin'],
   },
   {
+    id: 'violation-management',
+    label: 'Violation Management',
+    icon: FileWarning,
+    roles: ['admin'],
+  },
+  {
     id: 'manage-users',
     label: 'Manage Users',
     icon: Users,
@@ -168,7 +174,15 @@ const getSections = (role, filteredItems) => {
       {
         title: 'Management',
         items: filteredItems.filter((item) =>
-          ['all-cases', 'manage-users', 'manage-vehicles', 'blacklist', 'license-renewals', 'brta-photos'].includes(item.id)
+          [
+            'all-cases',
+            'violation-management',
+            'manage-users',
+            'manage-vehicles',
+            'blacklist',
+            'license-renewals',
+            'brta-photos',
+          ].includes(item.id)
         ),
       },
       {

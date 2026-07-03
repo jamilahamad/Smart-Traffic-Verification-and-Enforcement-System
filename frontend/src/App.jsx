@@ -20,6 +20,7 @@ import AnalyticsPage from './pages/admin/AnalyticsPage';
 import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import LicenseRenewalsPage from './pages/admin/LicenseRenewalsPage';
 import BrtaPhotoUploadPage from './pages/admin/BrtaPhotoUploadPage';
+import ViolationManagementPage from './pages/admin/ViolationManagementPage';
 
 import PoliceDashboard from './pages/police/PoliceDashboard';
 import VerifyPage from './pages/police/VerifyPage';
@@ -180,6 +181,9 @@ export default function App() {
 
       case 'brta-photos':
         return <BrtaPhotoUploadPage {...commonPageProps} />;
+
+      case 'violation-management':
+        return <ViolationManagementPage {...commonPageProps} />;
 
       case 'my-license':
         return <MyLicensePage {...commonPageProps} />;

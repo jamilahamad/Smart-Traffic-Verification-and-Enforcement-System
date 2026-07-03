@@ -3,39 +3,16 @@ const { sendSuccess } = require("../utils/apiResponse");
 const violationService = require("../services/violation.service");
 const AppError = require("../utils/AppError");
 
-const DRIVER_ONLY_VIOLATION_CODES = new Set([
-  "DL_EXP",
-  "DL_RENEW_LATE",
-  "NO_DL",
-  "SIGNAL",
-  "SPEED",
-  "RECKLESS",
-  "PARKING",
-  "HELMET",
-  "SEATBELT",
-]);
+const getSnapshotApplicableTo = (violation = {}) => {
+  const snapshotApplicableTo = violation.violationSnapshot?.applicableTo || [];
 
-const OWNER_ONLY_VIOLATION_CODES = new Set([
-  "REG_EXP",
-  "FIT_EXP",
-  "TAX_EXP",
-  "INS_EXP",
-  "ROUTE_EXP",
-  "BLACKLIST",
-]);
+  if (!Array.isArray(snapshotApplicableTo)) {
+    return [];
+  }
 
-const BOTH_VIOLATION_CODES = new Set([
-  "UNAUTH_DRV",
-  "OVERLOAD",
-]);
-
-const getViolationText = (violation = {}) => {
-  return String(
-    violation.violationType ||
-    violation.violationLabel ||
-    violation.description ||
-    ""
-  ).toLowerCase();
+  return snapshotApplicableTo
+    .map((item) => String(item || "").toLowerCase())
+    .filter(Boolean);
 };
 
 const getViolationResponsibility = (violation = {}) => {
@@ -47,43 +24,21 @@ const getViolationResponsibility = (violation = {}) => {
     return savedResponsibility;
   }
 
-  const code = String(
-    violation.violationCode ||
-    violation.code ||
-    violation.ruleCode ||
-    ""
-  ).toUpperCase();
+  const applicableTo = getSnapshotApplicableTo(violation);
 
-  if (DRIVER_ONLY_VIOLATION_CODES.has(code)) {
-    return "driver";
-  }
+  const appliesToDriver = applicableTo.includes("driver");
+  const appliesToOwner = applicableTo.includes("owner");
 
-  if (BOTH_VIOLATION_CODES.has(code)) {
+  if (appliesToDriver && appliesToOwner) {
     return "both";
   }
 
-  if (OWNER_ONLY_VIOLATION_CODES.has(code)) {
+  if (appliesToDriver) {
+    return "driver";
+  }
+
+  if (appliesToOwner) {
     return "owner";
-  }
-
-  const text = getViolationText(violation);
-
-  if (
-    text.includes("traffic signal") ||
-    text.includes("speeding") ||
-    text.includes("reckless") ||
-    text.includes("helmet") ||
-    text.includes("seatbelt") ||
-    text.includes("driving without license") ||
-    text.includes("expired driving license") ||
-    text.includes("license renewal") ||
-    text.includes("illegal parking")
-  ) {
-    return "driver";
-  }
-
-  if (text.includes("unauthorized driver") || text.includes("overloading")) {
-    return "both";
   }
 
   return "owner";
