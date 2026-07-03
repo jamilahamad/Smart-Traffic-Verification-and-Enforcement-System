@@ -16,7 +16,6 @@ import {
 
 import api from '../../lib/api';
 import useStore from '../../store/useStore';
-import { VIOLATION_TYPES } from '../../store/database';
 import '../../styles/CreateCasePage.css';
 
 const cleanPlate = (value) => {
@@ -67,8 +66,39 @@ const formatMoney = (value) => {
   return `৳${Number(value || 0).toLocaleString()}`;
 };
 
-const getViolationByCode = (code) => {
-  return VIOLATION_TYPES.find((item) => item.code === code);
+const normalizeViolationType = (violationType = {}) => {
+  const applicableTo = Array.isArray(violationType.applicableTo)
+    ? violationType.applicableTo.map((item) => String(item || '').toLowerCase())
+    : [];
+
+  const responsibility =
+    violationType.responsibility ||
+    (applicableTo.includes('driver') && applicableTo.includes('owner')
+      ? 'both'
+      : applicableTo.includes('driver')
+        ? 'driver'
+        : 'owner');
+
+  return {
+    ...violationType,
+    id: violationType._id || violationType.id || '',
+    code: String(violationType.code || violationType.violationCode || '').toUpperCase(),
+    label:
+      violationType.name ||
+      violationType.label ||
+      violationType.violationType ||
+      '',
+    description: violationType.description || '',
+    fine: Number(violationType.fineAmount ?? violationType.fine ?? 0),
+    responsibility,
+    severity: violationType.severity || 'medium',
+    points: Number(violationType.points || 0),
+    applicableTo,
+  };
+};
+
+const getViolationByCode = (violationTypes, code) => {
+  return violationTypes.find((item) => item.code === code);
 };
 
 const getViolationResponsibility = (violationType = {}) => {
@@ -185,6 +215,8 @@ export default function CreateCasePage({ verificationResult: verificationResultP
     cleanLicense(verificationLicense?.licenseNumber || verificationDriver?.licenseNumber || '')
   );
   const [selectedViolations, setSelectedViolations] = useState([]);
+  const [violationTypes, setViolationTypes] = useState([]);
+  const [violationTypesLoading, setViolationTypesLoading] = useState(true);
   const [location, setLocation] = useState('');
   const [city, setCity] = useState('');
   const [description, setDescription] = useState('');
@@ -193,6 +225,42 @@ export default function CreateCasePage({ verificationResult: verificationResultP
   const [createdCaseIds, setCreatedCaseIds] = useState([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadViolationTypes = async () => {
+      try {
+        setViolationTypesLoading(true);
+
+        const data = await api.getActiveViolationTypes();
+        const items = data.violationTypes || data.items || data || [];
+
+        if (active) {
+          setViolationTypes(
+            Array.isArray(items) ? items.map(normalizeViolationType) : []
+          );
+        }
+      } catch (err) {
+        console.error('Load violation types failed:', err);
+
+        if (active) {
+          setError(err.message || 'Failed to load violation rules.');
+          setViolationTypes([]);
+        }
+      } finally {
+        if (active) {
+          setViolationTypesLoading(false);
+        }
+      }
+    };
+
+    loadViolationTypes();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const vehicle = useMemo(() => {
     const cleanValue = cleanPlate(plateNumber);
@@ -240,12 +308,12 @@ export default function CreateCasePage({ verificationResult: verificationResultP
   const driver = verificationDriver || selectedLicense?.driver || null;
 
   const totalFine = selectedViolations.reduce((sum, code) => {
-    const violationType = getViolationByCode(code);
+    const violationType = getViolationByCode(violationTypes, code);
     return sum + Number(violationType?.fine || 0);
   }, 0);
 
   const selectedViolationDetails = selectedViolations
-    .map((code) => getViolationByCode(code))
+    .map((code) => getViolationByCode(violationTypes, code))
     .filter(Boolean);
 
   const selectedDriverLinkedViolations = selectedViolationDetails.filter((violationType) => {
@@ -258,7 +326,7 @@ export default function CreateCasePage({ verificationResult: verificationResultP
   const hasVehicleInput = Boolean(cleanPlate(plateNumber));
   const hasLicenseInput = Boolean(cleanLicense(licenseNumber));
   const noViolationsSelected = selectedViolations.length === 0;
-  const submitDisabled = submitting || noViolationsSelected;
+  const submitDisabled = submitting || violationTypesLoading || noViolationsSelected;
 
   const toggleViolation = (code) => {
     setSelectedViolations((current) => {
@@ -287,20 +355,33 @@ export default function CreateCasePage({ verificationResult: verificationResultP
           : String(issue?.message || issue?.code || '').toLowerCase();
 
       issueToViolationMap.forEach((item) => {
-        if (item.words.some((word) => issueText.includes(word))) {
+        const existsInDynamicRules = violationTypes.some(
+          (violationType) => violationType.code === item.code
+        );
+
+        if (
+          existsInDynamicRules &&
+          item.words.some((word) => issueText.includes(word))
+        ) {
           detected.push(item.code);
         }
       });
     });
 
     if (selectedLicense?.status === 'expired') {
-      detected.push('DL_EXP');
+      const hasExpiredLicenseRule = violationTypes.some(
+        (violationType) => violationType.code === 'DL_EXP'
+      );
+
+      if (hasExpiredLicenseRule) {
+        detected.push('DL_EXP');
+      }
     }
 
     const uniqueDetected = [...new Set(detected)];
 
     if (uniqueDetected.length === 0) {
-      setError('No matching violation type detected automatically.');
+      setError('No matching active violation rule detected automatically.');
       return;
     }
 
@@ -361,6 +442,10 @@ export default function CreateCasePage({ verificationResult: verificationResultP
   };
 
   const createSingleCase = async (violationType) => {
+    if (!violationType?.id && !violationType?.code) {
+      throw new Error('Selected violation rule is invalid.');
+    }
+
     const registrationNumber = cleanPlate(plateNumber);
     const finalLicenseNumber = cleanLicense(licenseNumber || selectedLicense?.licenseNumber);
     const responsibility = getViolationResponsibility(violationType);
@@ -369,11 +454,18 @@ export default function CreateCasePage({ verificationResult: verificationResultP
     const payload = {
       registrationNumber,
       licenseNumber: shouldSendLicense && finalLicenseNumber ? finalLicenseNumber : undefined,
+
+      violationTypeId: violationType.id || undefined,
+      violationTypeRef: violationType.id || undefined,
       violationType: violationType.label,
       violationCode: violationType.code,
+
       responsibility,
-      description: `${violationType.label}${description.trim() ? `. ${description.trim()}` : ''}`,
-      fineAmount: violationType.fine,
+      description:
+        description.trim() ||
+        violationType.description ||
+        violationType.label,
+
       location: buildLocationPayload(),
       evidence: buildEvidence(),
     };
@@ -625,55 +717,71 @@ export default function CreateCasePage({ verificationResult: verificationResultP
               <button
                 type="button"
                 onClick={handleAutoDetect}
-                className="create-case-auto-button px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-xs font-semibold"
+                disabled={violationTypesLoading || violationTypes.length === 0}
+                className="create-case-auto-button px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
               >
                 ⚡ Auto-detect
               </button>
             )}
           </div>
 
-          <div className="create-case-violation-grid grid sm:grid-cols-2 gap-3">
-            {VIOLATION_TYPES.map((violationType) => {
-              const selected = selectedViolations.includes(violationType.code);
+          {violationTypesLoading && (
+            <div className="create-case-violation-loading rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
+              Loading violation rules from database...
+            </div>
+          )}
 
-              return (
-                <label
-                  key={violationType.code}
-                  className={`create-case-violation-option flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer ${selected
-                    ? 'border-red-400 bg-red-50'
-                    : 'border-gray-100 hover:border-gray-200'
-                    }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => toggleViolation(violationType.code)}
-                    className="create-case-checkbox w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                  />
+          {!violationTypesLoading && violationTypes.length === 0 && (
+            <div className="create-case-violation-empty rounded-2xl border border-red-100 bg-red-50 p-5 text-sm text-red-700">
+              No active violation rules found. Please ask Admin to create or enable violation rules.
+            </div>
+          )}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-sm font-semibold text-gray-700 truncate">
-                        {violationType.label}
+          {!violationTypesLoading && violationTypes.length > 0 && (
+            <div className="create-case-violation-grid grid sm:grid-cols-2 gap-3">
+              {violationTypes.map((violationType) => {
+                const selected = selectedViolations.includes(violationType.code);
+                const responsibility = getViolationResponsibility(violationType);
+
+                return (
+                  <label
+                    key={violationType.id || violationType.code}
+                    className={`create-case-violation-option flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer ${selected
+                        ? 'border-red-400 bg-red-50'
+                        : 'border-gray-100 hover:border-gray-200'
+                      }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleViolation(violationType.code)}
+                      className="create-case-checkbox w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-sm font-semibold text-gray-700 truncate">
+                          {violationType.label}
+                        </p>
+
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${getResponsibilityBadgeClass(
+                            responsibility
+                          )}`}
+                        >
+                          {getResponsibilityLabel(responsibility)}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-gray-400">
+                        Code: {violationType.code} • Fine: {formatMoney(violationType.fine)}
                       </p>
-
-                      <span
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${getResponsibilityBadgeClass(
-                          getViolationResponsibility(violationType)
-                        )}`}
-                      >
-                        {getResponsibilityLabel(getViolationResponsibility(violationType))}
-                      </span>
                     </div>
-
-                    <p className="text-xs text-gray-400">
-                      Code: {violationType.code} • Fine: {formatMoney(violationType.fine)}
-                    </p>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         <section className="create-case-card bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
@@ -790,9 +898,9 @@ export default function CreateCasePage({ verificationResult: verificationResultP
         <button
           type="submit"
           disabled={submitDisabled}
-          className={`create-case-submit-button w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm ${noViolationsSelected
-            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg active:scale-[0.98] disabled:opacity-60'
+          className={`create-case-submit-button w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm ${submitDisabled
+              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg active:scale-[0.98]'
             }`}
         >
           {submitting ? (
@@ -803,10 +911,12 @@ export default function CreateCasePage({ verificationResult: verificationResultP
 
           {submitting
             ? 'Creating E-Challan...'
-            : noViolationsSelected
-              ? 'Select violation to continue'
-              : `Issue E-Challan (${selectedViolations.length} violation${selectedViolations.length !== 1 ? 's' : ''
-              } • ${formatMoney(totalFine)})`}
+            : violationTypesLoading
+              ? 'Loading violation rules...'
+              : noViolationsSelected
+                ? 'Select violation to continue'
+                : `Issue E-Challan (${selectedViolations.length} violation${selectedViolations.length !== 1 ? 's' : ''
+                } • ${formatMoney(totalFine)})`}
         </button>
       </form>
     </div>

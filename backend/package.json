@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup:brta": "node scripts/setupBrtaMockDatabase.js"
+    "setup:brta": "node scripts/setupBrtaMockDatabase.js",
+    "seed:violations": "node scripts/seedViolationTypes.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

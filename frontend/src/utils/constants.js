@@ -102,24 +102,9 @@ export const LICENSE_CATEGORIES = [
 // Blood Groups
 export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 // Violation Types with Fines
-export const VIOLATION_TYPES = [
-    { code: 'DL_EXP', label: 'Expired Driving License', fine: 5000 },
-    { code: 'REG_EXP', label: 'Expired Vehicle Registration', fine: 10000 },
-    { code: 'FIT_EXP', label: 'Expired Fitness Certificate', fine: 7000 },
-    { code: 'TAX_EXP', label: 'Expired Tax Token', fine: 3000 },
-    { code: 'INS_EXP', label: 'Expired Insurance', fine: 5000 },
-    { code: 'NO_DL', label: 'Driving Without License', fine: 25000 },
-    { code: 'UNAUTH_DRV', label: 'Unauthorized Driver', fine: 15000 },
-    { code: 'ROUTE_EXP', label: 'Expired Route Permit', fine: 8000 },
-    { code: 'OVERLOAD', label: 'Overloading', fine: 10000 },
-    { code: 'SIGNAL', label: 'Traffic Signal Violation', fine: 5000 },
-    { code: 'SPEED', label: 'Speeding', fine: 5000 },
-    { code: 'RECKLESS', label: 'Reckless Driving', fine: 20000 },
-    { code: 'PARKING', label: 'Illegal Parking', fine: 2000 },
-    { code: 'HELMET', label: 'No Helmet', fine: 1000 },
-    { code: 'SEATBELT', label: 'No Seatbelt', fine: 1000 },
-    { code: 'BLACKLIST', label: 'Blacklisted Vehicle', fine: 50000 },
-];
+// Violation rules are now database-driven through `/api/violation-types`.
+// Keep this empty to prevent old hardcoded rules from being used accidentally.
+export const VIOLATION_TYPES = [];
 // Traffic Zones (Bangladesh)
 export const TRAFFIC_ZONES = [
     'Motijheel Traffic Zone',

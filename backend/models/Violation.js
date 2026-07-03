@@ -48,6 +48,12 @@ const violationSchema = new mongoose.Schema(
       index: true,
     },
 
+    violationTypeRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ViolationType",
+      index: true,
+    },
+
     violationType: {
       type: String,
       required: true,
@@ -57,6 +63,43 @@ const violationSchema = new mongoose.Schema(
     violationCode: {
       type: String,
       trim: true,
+      uppercase: true,
+      index: true,
+    },
+
+    violationSnapshot: {
+      code: {
+        type: String,
+        trim: true,
+        uppercase: true,
+      },
+      name: {
+        type: String,
+        trim: true,
+      },
+      description: {
+        type: String,
+        trim: true,
+      },
+      fineAmount: {
+        type: Number,
+        min: 0,
+      },
+      severity: {
+        type: String,
+        enum: ["low", "medium", "high", "critical"],
+      },
+      points: {
+        type: Number,
+        min: 0,
+        default: 0,
+      },
+      applicableTo: [
+        {
+          type: String,
+          enum: ["driver", "owner"],
+        },
+      ],
     },
 
     responsibility: {

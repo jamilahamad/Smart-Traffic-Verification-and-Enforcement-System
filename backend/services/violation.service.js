@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+const violationTypeService = require("./violationType.service");
 const Violation = require("../models/Violation");
 const Vehicle = require("../models/Vehicle");
 const DrivingLicense = require("../models/DrivingLicense");
@@ -23,53 +24,61 @@ const brtaLicenseService = require("./brtaLicense.service");
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
-const DRIVER_RESPONSIBILITY_CODES = new Set([
-  "DL_EXP",
-  "NO_DL",
-  "SIGNAL",
-  "SPEED",
-  "RECKLESS",
-  "PARKING",
-  "HELMET",
-  "SEATBELT",
-]);
+const getApplicableToList = (violationType = {}) => {
+  return Array.isArray(violationType.applicableTo)
+    ? violationType.applicableTo.map((item) => String(item).toLowerCase())
+    : [];
+};
 
-const OWNER_RESPONSIBILITY_CODES = new Set([
-  "REG_EXP",
-  "FIT_EXP",
-  "TAX_EXP",
-  "INS_EXP",
-  "ROUTE_EXP",
-  "BLACKLIST",
-]);
+const normalizeResponsibility = (responsibility, selectedViolationType = {}) => {
+  const requestedResponsibility = String(responsibility || "").toLowerCase();
 
-const BOTH_RESPONSIBILITY_CODES = new Set([
-  "UNAUTH_DRV",
-  "OVERLOAD",
-]);
-
-const normalizeResponsibility = (responsibility, violationCode) => {
-  const value = String(responsibility || "").toLowerCase();
-
-  if (["owner", "driver", "both"].includes(value)) {
-    return value;
+  if (["owner", "driver", "both"].includes(requestedResponsibility)) {
+    return requestedResponsibility;
   }
 
-  const code = String(violationCode || "").toUpperCase();
+  const applicableTo = getApplicableToList(selectedViolationType);
+  const appliesToDriver = applicableTo.includes("driver");
+  const appliesToOwner = applicableTo.includes("owner");
 
-  if (DRIVER_RESPONSIBILITY_CODES.has(code)) {
-    return "driver";
-  }
-
-  if (BOTH_RESPONSIBILITY_CODES.has(code)) {
+  if (appliesToDriver && appliesToOwner) {
     return "both";
   }
 
-  if (OWNER_RESPONSIBILITY_CODES.has(code)) {
+  if (appliesToDriver) {
+    return "driver";
+  }
+
+  if (appliesToOwner) {
     return "owner";
   }
 
-  return "owner";
+  throw new AppError(
+    "Selected violation does not have a valid applicable user type.",
+    400
+  );
+};
+
+const assertResponsibilityAllowed = (responsibility, selectedViolationType = {}) => {
+  const applicableTo = getApplicableToList(selectedViolationType);
+
+  if (responsibility === "driver" && !applicableTo.includes("driver")) {
+    throw new AppError("Selected violation is not applicable to driver.", 400);
+  }
+
+  if (responsibility === "owner" && !applicableTo.includes("owner")) {
+    throw new AppError("Selected violation is not applicable to owner.", 400);
+  }
+
+  if (
+    responsibility === "both" &&
+    (!applicableTo.includes("driver") || !applicableTo.includes("owner"))
+  ) {
+    throw new AppError(
+      "Selected violation is not applicable to both driver and owner.",
+      400
+    );
+  }
 };
 
 const findActiveAssignmentForVehicle = async ({
@@ -289,26 +298,46 @@ const createViolation = async (payload, officer) => {
     license,
     licenseNumber,
     violationType,
+    violationTypeId,
+    violationTypeRef,
+    violationName,
     violationCode,
     responsibility,
     description,
-    fineAmount,
     location,
     evidence,
   } = payload;
 
-  if (!violationType) {
+  if (
+    !violationTypeId &&
+    !violationTypeRef &&
+    !violationCode &&
+    !violationType &&
+    !violationName
+  ) {
     throw new AppError("Violation type is required.", 400);
   }
 
-  if (fineAmount === undefined || fineAmount === null || Number(fineAmount) < 0) {
-    throw new AppError("Valid fine amount is required.", 400);
-  }
+  const selectedViolationType = await violationTypeService.findViolationTypeForCase({
+    id: violationTypeId || violationTypeRef,
+    code: violationCode,
+    name: violationName || violationType,
+  });
 
   const finalResponsibility = normalizeResponsibility(
     responsibility,
-    violationCode
+    selectedViolationType
   );
+
+  assertResponsibilityAllowed(finalResponsibility, selectedViolationType);
+
+  const finalFineAmount = Number(
+    selectedViolationType.fineAmount || selectedViolationType.fine || 0
+  );
+
+  if (!Number.isFinite(finalFineAmount) || finalFineAmount < 0) {
+    throw new AppError("Selected violation has invalid fine amount.", 400);
+  }
 
   const shouldLinkDriver =
     finalResponsibility === "driver" || finalResponsibility === "both";
@@ -321,11 +350,9 @@ const createViolation = async (payload, officer) => {
   if (vehicle && isObjectId(vehicle)) {
     appVehicle = await Vehicle.findById(vehicle).lean();
 
-    if (!appVehicle) {
-      throw new AppError("Selected app vehicle was not found.", 404);
+    if (appVehicle?.registrationNumber) {
+      finalRegistrationNumber = normalizePlate(appVehicle.registrationNumber);
     }
-
-    finalRegistrationNumber = normalizePlate(appVehicle.registrationNumber);
   }
 
   if (!appVehicle && finalRegistrationNumber) {
@@ -554,12 +581,27 @@ const createViolation = async (payload, officer) => {
 
     officer: officer._id,
 
-    violationType,
-    violationCode,
-    responsibility: finalResponsibility,
-    description,
+    violationTypeRef: selectedViolationType._id || selectedViolationType.id,
+    violationType: selectedViolationType.name,
+    violationCode: selectedViolationType.code,
 
-    fineAmount: Number(fineAmount),
+    violationSnapshot: {
+      code: selectedViolationType.code,
+      name: selectedViolationType.name,
+      description: selectedViolationType.description || "",
+      fineAmount: finalFineAmount,
+      severity: selectedViolationType.severity || "medium",
+      points: Number(selectedViolationType.points || 0),
+      applicableTo: selectedViolationType.applicableTo || [],
+    },
+
+    responsibility: finalResponsibility,
+    description:
+      description ||
+      selectedViolationType.description ||
+      selectedViolationType.name,
+
+    fineAmount: finalFineAmount,
     currency: "BDT",
 
     location: location || {},
