@@ -497,11 +497,11 @@ const useStore = create((set, get) => ({
   verificationResult: null,
   qrVerificationPayload: null,
 
-  users: seedUsers.map(mapUser),
-  licenses: seedLicenses.map(mapLicense),
-  vehicles: seedVehicles.map(mapVehicle),
-  violations: seedViolations.map(mapViolation),
-  activityLogs: seedActivityLogs.map(mapLog),
+  users: [],
+  licenses: [],
+  vehicles: [],
+  violations: [],
+  activityLogs: [],
   assignments: [],
   verificationLogs: [],
 
