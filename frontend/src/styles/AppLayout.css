@@ -43,6 +43,24 @@
   border-radius: 999px;
 }
 
+.stves-sidebar-menu {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+}
+
+.stves-sidebar-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stves-sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stves-sidebar-menu::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 999px;
+}
+
 .animate-fade-in {
   animation: stvesFadeIn 160ms ease-out;
 }
@@ -64,6 +82,7 @@
 }
 
 @keyframes stvesPulseBadge {
+
   0%,
   100% {
     transform: scale(1);
@@ -77,6 +96,7 @@
 }
 
 @media print {
+
   .stves-navbar,
   .stves-sidebar,
   .stves-sidebar-overlay,

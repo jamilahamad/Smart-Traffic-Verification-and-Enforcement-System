@@ -265,13 +265,13 @@ export default function Sidebar({
 
       <aside
         className={`
-          stves-sidebar fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200
-          z-40 overflow-y-auto transform transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0
-        `}
+    stves-sidebar fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200
+    z-40 flex flex-col overflow-hidden transform transition-transform duration-300 ease-in-out
+    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+    lg:translate-x-0
+  `}
       >
-        <div className="stves-sidebar-menu p-4 pb-28">
+        <div className="stves-sidebar-menu flex-1 overflow-y-auto p-4 pb-4">
           {sections.map((section) => {
             if (section.items.length === 0) {
               return null;
@@ -313,7 +313,7 @@ export default function Sidebar({
           })}
         </div>
 
-        <div className="stves-sidebar-footer absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-gray-50">
+        <div className="stves-sidebar-footer shrink-0 p-4 border-t border-gray-100 bg-gray-50">
           <div className="flex items-center gap-3">
             <UserAvatar
               user={currentUser}
