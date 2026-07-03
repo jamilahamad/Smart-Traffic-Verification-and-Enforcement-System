@@ -174,6 +174,7 @@ export default function ManageVehiclesPage() {
   const addLog = useStore((state) => state.addLog);
   const currentUser = useStore((state) => state.currentUser);
   const apiError = useStore((state) => state.apiError);
+  const isLoading = useStore((state) => state.isLoading);
 
   const [searchQ, setSearchQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -369,6 +370,20 @@ export default function ManageVehiclesPage() {
         <div className="manage-vehicles-error bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
           {apiError}
         </div>
+      )}
+
+      {isLoading && (
+        <section className="manage-vehicles-loading-card rounded-2xl border border-blue-100 bg-white p-10 text-center">
+          <Loader2 size={28} className="mx-auto mb-3 animate-spin text-[#0f4c81]" />
+
+          <h2 className="text-base font-semibold text-gray-800">
+            Loading BRTA vehicle records...
+          </h2>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Please wait while the latest database records are being fetched.
+          </p>
+        </section>
       )}
 
       <section className="manage-vehicles-stats-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
