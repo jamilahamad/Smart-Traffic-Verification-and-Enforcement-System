@@ -22,6 +22,24 @@ const verifyRegistrationOtp = asyncHandler(async (req, res) => {
   });
 });
 
+const requestPasswordResetOtp = asyncHandler(async (req, res) => {
+  const result = await authService.requestPasswordResetOtp(req.body);
+
+  return sendSuccess(res, 200, "Password reset code sent to your email.", {
+    email: result.email,
+    expiresAt: result.expiresAt,
+    expiresInMinutes: result.expiresInMinutes,
+  });
+});
+
+const resetPasswordWithOtp = asyncHandler(async (req, res) => {
+  const result = await authService.resetPasswordWithOtp(req.body);
+
+  return sendSuccess(res, 200, "Password reset successfully. Please login.", {
+    email: result.email,
+  });
+});
+
 const register = requestRegistrationOtp;
 
 const login = asyncHandler(async (req, res) => {
@@ -53,6 +71,8 @@ module.exports = {
   register,
   requestRegistrationOtp,
   verifyRegistrationOtp,
+  requestPasswordResetOtp,
+  resetPasswordWithOtp,
   login,
   me,
   updateMe,

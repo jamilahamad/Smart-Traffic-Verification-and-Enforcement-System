@@ -9,7 +9,12 @@ const BrtaOwner = require("../models/BrtaOwner");
 const AppError = require("../utils/AppError");
 const generateToken = require("../utils/generateToken");
 const { resolveBrtaAvatar } = require("./brtaAvatar.service");
-const { sendRegistrationOtpEmail } = require("./email.service");
+const {
+  sendRegistrationOtpEmail,
+  sendPasswordResetOtpEmail,
+} = require("./email.service");
+const MAX_PASSWORD_RESET_OTP_ATTEMPTS = 5;
+const PendingPasswordReset = require("../models/PendingPasswordReset");
 
 const PUBLIC_REGISTER_ROLES = ["driver", "owner"];
 const BLOCKED_BRTA_STATUSES = ["suspended", "blacklisted", "inactive", "pending"];
@@ -540,6 +545,136 @@ const verifyRegistrationOtp = async (payload = {}) => {
   };
 };
 
+const requestPasswordResetOtp = async (payload = {}) => {
+  const email = cleanLower(payload.email);
+
+  if (!email) {
+    throw new AppError("Email address is required.", 400);
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new AppError("No account was found with this email address.", 404);
+  }
+
+  if (user.status !== "active") {
+    throw new AppError(`Account is ${user.status}. Please contact admin.`, 403);
+  }
+
+  const otp = generateRegistrationOtp();
+  const otpHash = await bcrypt.hash(otp, 10);
+  const expiresAt = getOtpExpiresAt();
+
+  await PendingPasswordReset.findOneAndUpdate(
+    { email },
+    {
+      $set: {
+        email,
+        otpHash,
+        attempts: 0,
+        expiresAt,
+      },
+    },
+    {
+      new: true,
+      upsert: true,
+      runValidators: true,
+      setDefaultsOnInsert: true,
+    }
+  );
+
+  try {
+    await sendPasswordResetOtpEmail({
+      to: email,
+      name: user.name,
+      otp,
+      expiresInMinutes: getRegistrationOtpMinutes(),
+    });
+  } catch (error) {
+    await PendingPasswordReset.deleteOne({ email });
+    throw error;
+  }
+
+  return {
+    email,
+    expiresAt,
+    expiresInMinutes: getRegistrationOtpMinutes(),
+  };
+};
+
+const resetPasswordWithOtp = async (payload = {}) => {
+  const email = cleanLower(payload.email);
+  const otp = clean(payload.otp || payload.code);
+  const password = String(payload.password || "");
+  const confirmPassword = String(payload.confirmPassword || payload.password || "");
+
+  if (!email) {
+    throw new AppError("Email address is required.", 400);
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new AppError("Enter the 6 digit password reset code.", 400);
+  }
+
+  if (!password || password.length < 6) {
+    throw new AppError("Password must be at least 6 characters.", 400);
+  }
+
+  if (password !== confirmPassword) {
+    throw new AppError("Password and confirm password do not match.", 400);
+  }
+
+  const pending = await PendingPasswordReset.findOne({ email });
+
+  if (!pending) {
+    throw new AppError("No pending password reset request was found. Please request a new code.", 404);
+  }
+
+  if (pending.expiresAt <= new Date()) {
+    await PendingPasswordReset.deleteOne({ _id: pending._id });
+    throw new AppError("Password reset code has expired. Please request a new code.", 400);
+  }
+
+  if (pending.attempts >= MAX_PASSWORD_RESET_OTP_ATTEMPTS) {
+    await PendingPasswordReset.deleteOne({ _id: pending._id });
+    throw new AppError("Too many wrong attempts. Please request a new code.", 429);
+  }
+
+  const isMatch = await bcrypt.compare(otp, pending.otpHash);
+
+  if (!isMatch) {
+    pending.attempts += 1;
+    await pending.save();
+
+    const remainingAttempts = Math.max(
+      MAX_PASSWORD_RESET_OTP_ATTEMPTS - pending.attempts,
+      0
+    );
+
+    throw new AppError(
+      `Invalid password reset code. ${remainingAttempts} attempt(s) remaining.`,
+      400
+    );
+  }
+
+  const user = await User.findOne({ email }).select("+password");
+
+  if (!user) {
+    await PendingPasswordReset.deleteOne({ _id: pending._id });
+    throw new AppError("User not found.", 404);
+  }
+
+  user.password = await bcrypt.hash(password, 10);
+  await user.save();
+
+  await PendingPasswordReset.deleteOne({ _id: pending._id });
+
+  return {
+    email,
+  };
+};
+
 const registerUser = requestRegistrationOtp;
 
 const loginUser = async (payload) => {
@@ -725,6 +860,8 @@ module.exports = {
   registerUser,
   requestRegistrationOtp,
   verifyRegistrationOtp,
+  requestPasswordResetOtp,
+  resetPasswordWithOtp,
   loginUser,
   getCurrentUser,
   updateCurrentUser,
