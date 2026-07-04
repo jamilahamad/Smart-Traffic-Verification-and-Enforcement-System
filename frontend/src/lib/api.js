@@ -167,6 +167,20 @@ const api = {
       auth: false,
     }),
 
+  requestRegistrationOtp: (payload) =>
+    request('/auth/register/request-otp', {
+      method: 'POST',
+      body: payload,
+      auth: false,
+    }),
+
+  verifyRegistrationOtp: (payload) =>
+    request('/auth/register/verify-otp', {
+      method: 'POST',
+      body: payload,
+      auth: false,
+    }),
+
   me: () => request('/auth/me'),
 
   // ---------------- USERS ----------------

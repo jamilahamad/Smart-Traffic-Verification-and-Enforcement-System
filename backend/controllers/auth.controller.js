@@ -2,14 +2,27 @@ const asyncHandler = require("../utils/asyncHandler");
 const { sendSuccess } = require("../utils/apiResponse");
 const authService = require("../services/auth.service");
 
-const register = asyncHandler(async (req, res) => {
-  const result = await authService.registerUser(req.body);
+const requestRegistrationOtp = asyncHandler(async (req, res) => {
+  const result = await authService.requestRegistrationOtp(req.body);
 
-  return sendSuccess(res, 201, "User registered successfully.", {
+  return sendSuccess(res, 200, "Verification code sent to your email.", {
+    email: result.email,
+    role: result.role,
+    expiresAt: result.expiresAt,
+    expiresInMinutes: result.expiresInMinutes,
+  });
+});
+
+const verifyRegistrationOtp = asyncHandler(async (req, res) => {
+  const result = await authService.verifyRegistrationOtp(req.body);
+
+  return sendSuccess(res, 201, "Email verified and user registered successfully.", {
     token: result.token,
     user: result.user,
   });
 });
+
+const register = requestRegistrationOtp;
 
 const login = asyncHandler(async (req, res) => {
   const result = await authService.loginUser(req.body);
@@ -38,6 +51,8 @@ const updateMe = asyncHandler(async (req, res) => {
 
 module.exports = {
   register,
+  requestRegistrationOtp,
+  verifyRegistrationOtp,
   login,
   me,
   updateMe,
