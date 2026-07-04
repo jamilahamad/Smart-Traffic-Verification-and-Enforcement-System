@@ -166,7 +166,7 @@ UserSchema.virtual("isProtected").get(function () {
   return this.isSuperAdmin === true;
 });
 
-UserSchema.pre("save", function (next) {
+UserSchema.pre("save", function () {
   if (this.role !== "admin") {
     this.adminLevel = undefined;
   }
@@ -174,8 +174,6 @@ UserSchema.pre("save", function (next) {
   if (this.role === "admin" && !this.adminLevel) {
     this.adminLevel = "admin";
   }
-
-  next();
 });
 
 UserSchema.index({ role: 1, adminLevel: 1, status: 1 });

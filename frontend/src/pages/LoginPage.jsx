@@ -32,6 +32,7 @@ const initialFieldErrors = {
   phone: '',
   nid: '',
   password: '',
+  otp: '',
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -94,6 +95,10 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
   });
 
   const [registerForm, setRegisterForm] = useState(initialRegisterForm);
+  const [registrationStep, setRegistrationStep] = useState('form');
+  const [pendingRegistrationEmail, setPendingRegistrationEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpExpiresAt, setOtpExpiresAt] = useState('');
 
   const clearMessages = () => {
     setError('');
@@ -104,6 +109,10 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
   const switchMode = (nextMode) => {
     setMode(nextMode);
     clearMessages();
+    setRegistrationStep('form');
+    setPendingRegistrationEmail('');
+    setOtpCode('');
+    setOtpExpiresAt('');
   };
 
   const handleBackHome = () => {
@@ -142,6 +151,17 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
       [field]: '',
     }));
 
+    setError('');
+  };
+
+  const updateOtpCode = (value) => {
+    const cleanCode = String(value || '').replace(/\D/g, '').slice(0, 6);
+
+    setOtpCode(cleanCode);
+    setFieldErrors((current) => ({
+      ...current,
+      otp: '',
+    }));
     setError('');
   };
 
@@ -281,6 +301,15 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
     }
   };
 
+  const buildRegisterPayload = () => ({
+    name: registerForm.name.trim(),
+    email: registerForm.email.trim(),
+    password: registerForm.password.trim(),
+    phone: registerForm.phone.trim(),
+    nid: registerForm.nid.trim(),
+    role: registerForm.role,
+  });
+
   const handleRegister = async (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -288,14 +317,7 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
     setError('');
     setSuccess('');
 
-    const payload = {
-      name: registerForm.name.trim(),
-      email: registerForm.email.trim(),
-      password: registerForm.password.trim(),
-      phone: registerForm.phone.trim(),
-      nid: registerForm.nid.trim(),
-      role: registerForm.role,
-    };
+    const payload = buildRegisterPayload();
 
     if (!validateRegisterForm(payload)) {
       setError('Please fix the highlighted fields and try again.');
@@ -305,18 +327,16 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
     try {
       setLoading(true);
 
-      await submitAuthRequest('/auth/register', payload);
+      const data = await submitAuthRequest('/auth/register/request-otp', payload);
 
-      setSuccess('Registration successful! Please login.');
-      setMode('login');
-
-      setLoginForm({
-        email: payload.email,
-        password: '',
-      });
-
-      setRegisterForm(initialRegisterForm);
+      setPendingRegistrationEmail(data?.email || payload.email);
+      setOtpExpiresAt(data?.expiresAt || '');
+      setOtpCode('');
+      setRegistrationStep('otp');
       setFieldErrors(initialFieldErrors);
+      setSuccess(
+        `Verification code sent to ${data?.email || payload.email}. Please check your Gmail inbox.`
+      );
     } catch (error) {
       setError(
         error?.message ||
@@ -325,6 +345,57 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifyRegistrationOtp = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setError('');
+    setSuccess('');
+
+    if (!/^\d{6}$/.test(otpCode)) {
+      setFieldErrors((current) => ({
+        ...current,
+        otp: 'Enter the 6 digit code sent to your email.',
+      }));
+      setError('Please enter the 6 digit verification code.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await submitAuthRequest('/auth/register/verify-otp', {
+        email: pendingRegistrationEmail || registerForm.email.trim(),
+        otp: otpCode,
+      });
+
+      setSuccess('Email verified successfully. Registration complete! Please login.');
+      setMode('login');
+      setLoginForm({
+        email: pendingRegistrationEmail || registerForm.email.trim(),
+        password: '',
+      });
+      setRegisterForm(initialRegisterForm);
+      setRegistrationStep('form');
+      setPendingRegistrationEmail('');
+      setOtpCode('');
+      setOtpExpiresAt('');
+      setFieldErrors(initialFieldErrors);
+    } catch (error) {
+      setError(error?.message || 'Email verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditRegistrationInfo = () => {
+    setRegistrationStep('form');
+    setOtpCode('');
+    setOtpExpiresAt('');
+    setError('');
+    setSuccess('');
   };
   return (
     <div className="login-wrapper min-h-screen bg-gradient-to-br from-[#0d1b2a] via-[#1b2838] to-[#0f4c81]">
@@ -477,192 +548,259 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
                 </form>
               ) : (
                 <form
-                  onSubmit={handleRegister}
+                  onSubmit={registrationStep === 'otp' ? handleVerifyRegistrationOtp : handleRegister}
                   className="login-form space-y-4"
                   noValidate
                 >
-                  <div className="login-field-group">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Register As
-                    </label>
+                  {registrationStep === 'otp' ? (
+                    <>
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Email Verification Code
+                        </label>
 
-                    <div className="login-role-grid grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => updateRegisterField('role', 'driver')}
-                        className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${registerForm.role === 'driver'
-                          ? 'border-[#0f4c81] bg-blue-50 text-[#0f4c81]'
-                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                          }`}
-                      >
-                        🚗 Driver
-                      </button>
+                        <div className="login-input-wrap relative">
+                          <Mail
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
 
-                      <button
-                        type="button"
-                        onClick={() => updateRegisterField('role', 'owner')}
-                        className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${registerForm.role === 'owner'
-                          ? 'border-[#0f4c81] bg-blue-50 text-[#0f4c81]'
-                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                          }`}
-                      >
-                        🔑 Vehicle Owner
-                      </button>
-                    </div>
-                  </div>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={otpCode}
+                            onChange={(event) => updateOtpCode(event.target.value)}
+                            placeholder="Enter 6 digit code"
+                            autoComplete="one-time-code"
+                            className={getInputClass(Boolean(fieldErrors.otp))}
+                          />
+                        </div>
 
-                  <div className="login-field-group">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Full Name
-                    </label>
-
-                    <div className="login-input-wrap relative">
-                      <User
-                        size={18}
-                        className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-
-                      <input
-                        type="text"
-                        value={registerForm.name}
-                        onChange={(event) => updateRegisterField('name', event.target.value)}
-                        placeholder="Enter your full name"
-                        autoComplete="name"
-                        className={getInputClass(Boolean(fieldErrors.name))}
-                      />
-                    </div>
-
-                    {fieldErrors.name && (
-                      <p className="login-field-error">{fieldErrors.name}</p>
-                    )}
-                  </div>
-
-                  <div className="login-field-group">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Email Address
-                    </label>
-
-                    <div className="login-input-wrap relative">
-                      <Mail
-                        size={18}
-                        className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-
-                      <input
-                        type="email"
-                        value={registerForm.email}
-                        onChange={(event) => updateRegisterField('email', event.target.value)}
-                        placeholder="Enter your email"
-                        autoComplete="email"
-                        className={getInputClass(Boolean(fieldErrors.email))}
-                      />
-                    </div>
-
-                    {fieldErrors.email && (
-                      <p className="login-field-error">{fieldErrors.email}</p>
-                    )}
-                  </div>
-
-                  <div className="login-register-grid grid grid-cols-2 gap-3">
-                    <div className="login-field-group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Phone
-                      </label>
-
-                      <div className="login-input-wrap relative">
-                        <Phone
-                          size={18}
-                          className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                        />
-
-                        <input
-                          type="text"
-                          value={registerForm.phone}
-                          onChange={(event) => updateRegisterField('phone', event.target.value)}
-                          placeholder="01XXXXXXXXX"
-                          autoComplete="tel"
-                          className={getInputClass(Boolean(fieldErrors.phone))}
-                        />
+                        {fieldErrors.otp && (
+                          <p className="login-field-error">{fieldErrors.otp}</p>
+                        )}
                       </div>
 
-                      {fieldErrors.phone && (
-                        <p className="login-field-error">{fieldErrors.phone}</p>
-                      )}
-                    </div>
-
-                    <div className="login-field-group">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        NID Number
-                      </label>
-
-                      <div className="login-input-wrap relative">
-                        <CreditCard
-                          size={18}
-                          className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                        />
-
-                        <input
-                          type="text"
-                          value={registerForm.nid}
-                          onChange={(event) => updateRegisterField('nid', event.target.value)}
-                          placeholder="NID Number"
-                          className={getInputClass(Boolean(fieldErrors.nid))}
-                        />
-                      </div>
-
-                      {fieldErrors.nid && (
-                        <p className="login-field-error">{fieldErrors.nid}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="login-field-group">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Password
-                    </label>
-
-                    <div className="login-input-wrap relative">
-                      <Lock
-                        size={18}
-                        className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={registerForm.password}
-                        onChange={(event) => updateRegisterField('password', event.target.value)}
-                        placeholder="Minimum 6 characters"
-                        autoComplete="new-password"
-                        className={getPasswordInputClass(Boolean(fieldErrors.password))}
-                      />
+                      <p className="login-brta-note rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                        A verification code was sent to <strong>{pendingRegistrationEmail || registerForm.email}</strong>.
+                        {otpExpiresAt ? ` Code expires at ${new Date(otpExpiresAt).toLocaleTimeString()}.` : ''}
+                      </p>
 
                       <button
-                        type="button"
-                        onClick={() => setShowPassword((current) => !current)}
-                        className="login-password-toggle absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        type="submit"
+                        disabled={loading}
+                        className="login-submit-button w-full py-3 bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {loading ? 'Verifying code...' : 'Verify Email & Create Account'}
+                        <ChevronRight size={18} />
                       </button>
-                    </div>
 
-                    {fieldErrors.password && (
-                      <p className="login-field-error">{fieldErrors.password}</p>
-                    )}
-                  </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={handleRegister}
+                          disabled={loading}
+                          className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+                        >
+                          Resend Code
+                        </button>
 
-                  <p className="login-brta-note rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
-                    Driver/Owner account will be created only when your name, phone, and NID match the BRTA mock database.
-                  </p>
+                        <button
+                          type="button"
+                          onClick={handleEditRegistrationInfo}
+                          disabled={loading}
+                          className="rounded-xl border border-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                        >
+                          Edit Info
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Register As
+                        </label>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="login-submit-button w-full py-3 bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
-                  >
-                    {loading ? 'Creating account...' : 'Create Account'}
-                    <ChevronRight size={18} />
-                  </button>
+                        <div className="login-role-grid grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateRegisterField('role', 'driver')}
+                            className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${registerForm.role === 'driver'
+                              ? 'border-[#0f4c81] bg-blue-50 text-[#0f4c81]'
+                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                              }`}
+                          >
+                            🚗 Driver
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => updateRegisterField('role', 'owner')}
+                            className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${registerForm.role === 'owner'
+                              ? 'border-[#0f4c81] bg-blue-50 text-[#0f4c81]'
+                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                              }`}
+                          >
+                            🔑 Vehicle Owner
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Full Name
+                        </label>
+
+                        <div className="login-input-wrap relative">
+                          <User
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type="text"
+                            value={registerForm.name}
+                            onChange={(event) => updateRegisterField('name', event.target.value)}
+                            placeholder="Enter your full name"
+                            autoComplete="name"
+                            className={getInputClass(Boolean(fieldErrors.name))}
+                          />
+                        </div>
+
+                        {fieldErrors.name && (
+                          <p className="login-field-error">{fieldErrors.name}</p>
+                        )}
+                      </div>
+
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Email Address
+                        </label>
+
+                        <div className="login-input-wrap relative">
+                          <Mail
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type="email"
+                            value={registerForm.email}
+                            onChange={(event) => updateRegisterField('email', event.target.value)}
+                            placeholder="Enter your email"
+                            autoComplete="email"
+                            className={getInputClass(Boolean(fieldErrors.email))}
+                          />
+                        </div>
+
+                        {fieldErrors.email && (
+                          <p className="login-field-error">{fieldErrors.email}</p>
+                        )}
+                      </div>
+
+                      <div className="login-register-grid grid grid-cols-2 gap-3">
+                        <div className="login-field-group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Phone
+                          </label>
+
+                          <div className="login-input-wrap relative">
+                            <Phone
+                              size={18}
+                              className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
+
+                            <input
+                              type="text"
+                              value={registerForm.phone}
+                              onChange={(event) => updateRegisterField('phone', event.target.value)}
+                              placeholder="01XXXXXXXXX"
+                              autoComplete="tel"
+                              className={getInputClass(Boolean(fieldErrors.phone))}
+                            />
+                          </div>
+
+                          {fieldErrors.phone && (
+                            <p className="login-field-error">{fieldErrors.phone}</p>
+                          )}
+                        </div>
+
+                        <div className="login-field-group">
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            NID Number
+                          </label>
+
+                          <div className="login-input-wrap relative">
+                            <CreditCard
+                              size={18}
+                              className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
+
+                            <input
+                              type="text"
+                              value={registerForm.nid}
+                              onChange={(event) => updateRegisterField('nid', event.target.value)}
+                              placeholder="NID Number"
+                              className={getInputClass(Boolean(fieldErrors.nid))}
+                            />
+                          </div>
+
+                          {fieldErrors.nid && (
+                            <p className="login-field-error">{fieldErrors.nid}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Password
+                        </label>
+
+                        <div className="login-input-wrap relative">
+                          <Lock
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={registerForm.password}
+                            onChange={(event) => updateRegisterField('password', event.target.value)}
+                            placeholder="Minimum 6 characters"
+                            autoComplete="new-password"
+                            className={getPasswordInputClass(Boolean(fieldErrors.password))}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((current) => !current)}
+                            className="login-password-toggle absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+
+                        {fieldErrors.password && (
+                          <p className="login-field-error">{fieldErrors.password}</p>
+                        )}
+                      </div>
+
+                      <p className="login-brta-note rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                        Driver/Owner account will be created only when your name, phone, and NID match the BRTA mock database.
+                      </p>
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="login-submit-button w-full py-3 bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
+                      >
+                        {loading ? 'Sending code...' : 'Send Verification Code'}
+                        <ChevronRight size={18} />
+                      </button>
+                    </>
+                  )}
                 </form>
               )}
             </div>

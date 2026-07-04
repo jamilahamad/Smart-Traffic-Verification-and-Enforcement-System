@@ -1,21 +1,43 @@
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
+const PendingRegistration = require("../models/PendingRegistration");
 const BrtaDriver = require("../models/BrtaDriver");
 const BrtaDrivingLicense = require("../models/BrtaDrivingLicense");
 const BrtaOwner = require("../models/BrtaOwner");
 const AppError = require("../utils/AppError");
 const generateToken = require("../utils/generateToken");
 const { resolveBrtaAvatar } = require("./brtaAvatar.service");
+const { sendRegistrationOtpEmail } = require("./email.service");
 
 const PUBLIC_REGISTER_ROLES = ["driver", "owner"];
 const BLOCKED_BRTA_STATUSES = ["suspended", "blacklisted", "inactive", "pending"];
 const BLOCKED_LICENSE_STATUSES = ["suspended", "blacklisted", "pending"];
+const REGISTRATION_OTP_LENGTH = 6;
+const MAX_REGISTRATION_OTP_ATTEMPTS = 5;
 
 const clean = (value = "") => String(value || "").trim();
 const cleanLower = (value = "") => clean(value).toLowerCase();
 const cleanUpper = (value = "") => clean(value).toUpperCase();
 const onlyDigits = (value = "") => clean(value).replace(/\D/g, "");
+
+const getRegistrationOtpMinutes = () => {
+  const minutes = Number(process.env.REGISTRATION_OTP_MINUTES || 10);
+
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : 10;
+};
+
+const generateRegistrationOtp = () => {
+  const min = 10 ** (REGISTRATION_OTP_LENGTH - 1);
+  const max = 10 ** REGISTRATION_OTP_LENGTH;
+
+  return String(crypto.randomInt(min, max));
+};
+
+const getOtpExpiresAt = () => {
+  return new Date(Date.now() + getRegistrationOtpMinutes() * 60 * 1000);
+};
 
 const formatOfficialAddress = (address = {}) => {
   if (!address || typeof address !== "object") {
@@ -310,7 +332,7 @@ const resolveVerifiedOwnerRegistration = async ({ name, phone, nid }) => {
   };
 };
 
-const registerUser = async (payload) => {
+const buildVerifiedRegistrationUserData = async (payload) => {
   const {
     name,
     email,
@@ -321,10 +343,9 @@ const registerUser = async (payload) => {
     brtaDriverId,
     brtaOwnerId,
     licenseNumber,
-    badge,
-    station,
-    rank,
   } = payload;
+
+  const cleanRole = cleanLower(role || "driver");
 
   if (!clean(name)) {
     throw new AppError("Full name is required.", 400);
@@ -346,7 +367,7 @@ const registerUser = async (payload) => {
     throw new AppError("Password is required.", 400);
   }
 
-  if (!PUBLIC_REGISTER_ROLES.includes(role)) {
+  if (!PUBLIC_REGISTER_ROLES.includes(cleanRole)) {
     throw new AppError("Public registration is only allowed for driver or owner accounts.", 403);
   }
 
@@ -363,14 +384,14 @@ const registerUser = async (payload) => {
   }
 
   const verifiedIdentity =
-    role === "driver"
+    cleanRole === "driver"
       ? await resolveVerifiedDriverRegistration({ name, phone, nid, licenseNumber })
       : await resolveVerifiedOwnerRegistration({ name, phone, nid });
 
   const hashedPassword = await bcrypt.hash(String(password), 10);
 
   const brtaAvatar = await resolveBrtaAvatar({
-    role,
+    role: cleanRole,
     nid: verifiedIdentity.nid,
     phone: verifiedIdentity.phone || phone,
     brtaDriverId: verifiedIdentity.brtaDriverId || brtaDriverId,
@@ -379,7 +400,7 @@ const registerUser = async (payload) => {
   });
 
   const officialAddress =
-    role === "driver"
+    cleanRole === "driver"
       ? formatOfficialAddress(verifiedIdentity.brtaDriver?.address)
       : formatOfficialAddress(verifiedIdentity.brtaOwner?.address);
 
@@ -387,7 +408,7 @@ const registerUser = async (payload) => {
     name: clean(name),
     email: normalizedEmail,
     password: hashedPassword,
-    role,
+    role: cleanRole,
     status: "active",
     phone: clean(phone) || verifiedIdentity.phone || "",
     nid: verifiedIdentity.nid,
@@ -397,22 +418,120 @@ const registerUser = async (payload) => {
     avatarSource: brtaAvatar.avatarSource,
   };
 
-  if (role === "driver") {
+  if (cleanRole === "driver") {
     userData.brtaDriverId = verifiedIdentity.brtaDriverId || brtaAvatar.brtaDriverId;
     userData.licenseNumber = verifiedIdentity.licenseNumber || brtaAvatar.licenseNumber;
   }
 
-  if (role === "owner") {
+  if (cleanRole === "owner") {
     userData.brtaOwnerId = verifiedIdentity.brtaOwnerId || brtaAvatar.brtaOwnerId;
   }
 
-  if (role === "police") {
-    if (badge) userData.badge = clean(badge);
-    if (station) userData.station = clean(station);
-    if (rank) userData.rank = clean(rank);
+  return userData;
+};
+
+const requestRegistrationOtp = async (payload) => {
+  const userData = await buildVerifiedRegistrationUserData(payload);
+  const otp = generateRegistrationOtp();
+  const otpHash = await bcrypt.hash(otp, 10);
+  const expiresAt = getOtpExpiresAt();
+
+  await PendingRegistration.findOneAndUpdate(
+    { email: userData.email },
+    {
+      $set: {
+        email: userData.email,
+        role: userData.role,
+        otpHash,
+        attempts: 0,
+        expiresAt,
+        userData,
+      },
+    },
+    {
+      new: true,
+      upsert: true,
+      runValidators: true,
+      setDefaultsOnInsert: true,
+    }
+  );
+
+  try {
+    await sendRegistrationOtpEmail({
+      to: userData.email,
+      name: userData.name,
+      otp,
+      expiresInMinutes: getRegistrationOtpMinutes(),
+    });
+  } catch (error) {
+    await PendingRegistration.deleteOne({ email: userData.email });
+
+    throw error;
   }
 
-  const user = await User.create(userData);
+  return {
+    email: userData.email,
+    role: userData.role,
+    expiresAt,
+    expiresInMinutes: getRegistrationOtpMinutes(),
+  };
+};
+
+const verifyRegistrationOtp = async (payload = {}) => {
+  const email = cleanLower(payload.email);
+  const otp = clean(payload.otp || payload.code);
+
+  if (!email) {
+    throw new AppError("Email address is required.", 400);
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new AppError("Enter the 6 digit verification code.", 400);
+  }
+
+  const pending = await PendingRegistration.findOne({ email });
+
+  if (!pending) {
+    throw new AppError("No pending registration was found for this email. Please register again.", 404);
+  }
+
+  if (pending.expiresAt <= new Date()) {
+    await PendingRegistration.deleteOne({ _id: pending._id });
+    throw new AppError("Verification code has expired. Please request a new code.", 400);
+  }
+
+  if (pending.attempts >= MAX_REGISTRATION_OTP_ATTEMPTS) {
+    await PendingRegistration.deleteOne({ _id: pending._id });
+    throw new AppError("Too many wrong attempts. Please register again and request a new code.", 429);
+  }
+
+  const isMatch = await bcrypt.compare(otp, pending.otpHash);
+
+  if (!isMatch) {
+    pending.attempts += 1;
+    await pending.save();
+
+    const remainingAttempts = Math.max(
+      MAX_REGISTRATION_OTP_ATTEMPTS - pending.attempts,
+      0
+    );
+
+    throw new AppError(
+      `Invalid verification code. ${remainingAttempts} attempt(s) remaining.`,
+      400
+    );
+  }
+
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    await PendingRegistration.deleteOne({ _id: pending._id });
+    throw new AppError("User already exists with this email.", 409);
+  }
+
+  const user = await User.create(pending.userData);
+  await PendingRegistration.deleteOne({ _id: pending._id });
+
   const token = generateToken(user);
 
   return {
@@ -420,6 +539,8 @@ const registerUser = async (payload) => {
     user: sanitizeUser(user),
   };
 };
+
+const registerUser = requestRegistrationOtp;
 
 const loginUser = async (payload) => {
   const { email, password } = payload;
@@ -602,6 +723,8 @@ const updateCurrentUser = async (userId, payload = {}) => {
 module.exports = {
   sanitizeUser,
   registerUser,
+  requestRegistrationOtp,
+  verifyRegistrationOtp,
   loginUser,
   getCurrentUser,
   updateCurrentUser,
