@@ -126,6 +126,10 @@ const isBlockedStatus = (status = "", blockedStatuses = BLOCKED_BRTA_STATUSES) =
   return blockedStatuses.includes(cleanLower(status));
 };
 
+const isSuperAdminUser = (user = {}) => {
+  return user.role === "admin" && user.adminLevel === "super_admin";
+};
+
 const sanitizeUser = (user) => {
   if (!user) return null;
 
@@ -139,6 +143,9 @@ const sanitizeUser = (user) => {
     name: obj.name,
     email: obj.email,
     role: obj.role,
+    adminLevel: obj.role === "admin" ? obj.adminLevel || "admin" : "",
+    isSuperAdmin: isSuperAdminUser(obj),
+    isProtected: isSuperAdminUser(obj),
     status: obj.status,
     phone: obj.phone || "",
     nid: obj.nid || "",

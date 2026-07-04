@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Search,
   Ban,
@@ -16,22 +16,47 @@ import {
   Building2,
   Briefcase,
   LockKeyhole,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 import useStore from '../../store/useStore';
 import UserAvatar from '../../components/common/UserAvatar';
 import '../../styles/ManageUsersPage.css';
 
-const roleFilters = ['all', 'admin', 'police', 'driver', 'owner'];
+const adminRoleFilter = ['all', 'admin', 'police', 'driver', 'owner'];
+const operationalRoleFilter = ['all', 'police', 'driver', 'owner'];
+
+const getInternalStaffRoles = (canCreateAdmin) => {
+  const roles = [{ value: 'police', label: 'Police Staff' }];
+
+  if (canCreateAdmin) {
+    roles.push({ value: 'admin', label: 'System Admin' });
+  }
+
+  return roles;
+};
 
 const initialStaffForm = {
   name: '',
   email: '',
   phone: '',
+  role: 'police',
   badge: '',
   station: '',
   rank: '',
   password: '',
+};
+
+const initialEditForm = {
+  name: '',
+  email: '',
+  phone: '',
+  role: 'police',
+  badge: '',
+  station: '',
+  rank: '',
+  status: 'active',
 };
 
 const roleBadgeColors = {
@@ -55,6 +80,12 @@ const actionConfig = {
     buttonText: 'Activate',
     buttonClass: 'bg-green-600 hover:bg-green-700',
   },
+  inactive: {
+    title: 'Deactivate User',
+    message: 'This account will be softly disabled. Data will remain in the database.',
+    buttonText: 'Deactivate',
+    buttonClass: 'bg-gray-700 hover:bg-gray-800',
+  },
   suspended: {
     title: 'Suspend User',
     message: 'This user will be blocked temporarily until reactivated.',
@@ -69,18 +100,83 @@ const actionConfig = {
   },
 };
 
+const superAdminEmails = ['admin@stves.com', 'admin@stves.gov.bd', 'superadmin@stves.com'];
+
 const formatLabel = (value = '') => {
   const text = String(value || 'N/A');
   return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+const formatRoleLabel = (user = {}) => {
+  if (isSuperAdminAccount(user)) {
+    return 'Super Admin';
+  }
+
+  if (user.role === 'admin') {
+    return 'Admin';
+  }
+
+  return formatLabel(user.role || 'user');
 };
 
 const getUserId = (user) => {
   return user?.id || user?._id || '';
 };
 
+const isSuperAdminAccount = (user = {}) => {
+  const role = String(user.role || '').toLowerCase();
+
+  if (role !== 'admin') {
+    return false;
+  }
+
+  const adminLevel = String(user.adminLevel || '').toLowerCase();
+  const email = String(user.email || '').toLowerCase();
+  const name = String(user.name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+  return (
+    user.isSuperAdmin === true ||
+    adminLevel === 'super_admin' ||
+    superAdminEmails.includes(email) ||
+    name === 'super admin'
+  );
+};
+
+const canManageUser = (currentUser, targetUser) => {
+  if (!currentUser || !targetUser) {
+    return false;
+  }
+
+  if (getUserId(currentUser) === getUserId(targetUser)) {
+    return false;
+  }
+
+  if (isSuperAdminAccount(targetUser)) {
+    return false;
+  }
+
+  if (isSuperAdminAccount(currentUser)) {
+    return true;
+  }
+
+  return targetUser.role !== 'admin';
+};
+
+const buildStaffFormFromUser = (user = {}) => ({
+  name: user.name || '',
+  email: user.email || '',
+  phone: user.phone || '',
+  role: user.role === 'admin' ? 'admin' : 'police',
+  badge: user.badge || '',
+  station: user.station || '',
+  rank: user.rank || '',
+  status: user.status || 'active',
+});
+
 export default function ManageUsersPage() {
   const users = useStore((state) => state.users);
   const createUser = useStore((state) => state.createUser);
+  const updateUser = useStore((state) => state.updateUser);
   const updateUserStatus = useStore((state) => state.updateUserStatus);
   const addLog = useStore((state) => state.addLog);
   const currentUser = useStore((state) => state.currentUser);
@@ -93,26 +189,58 @@ export default function ManageUsersPage() {
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [staffForm, setStaffForm] = useState(initialStaffForm);
   const [staffFormError, setStaffFormError] = useState('');
+  const [editModalUser, setEditModalUser] = useState(null);
+  const [editForm, setEditForm] = useState(initialEditForm);
+  const [editFormError, setEditFormError] = useState('');
   const [pendingAction, setPendingAction] = useState(null);
 
+  const currentUserIsSuperAdmin = isSuperAdminAccount(currentUser);
+  const internalStaffRoles = useMemo(
+    () => getInternalStaffRoles(currentUserIsSuperAdmin),
+    [currentUserIsSuperAdmin]
+  );
+  const roleFilters = currentUserIsSuperAdmin ? adminRoleFilter : operationalRoleFilter;
+
+  useEffect(() => {
+    if (!currentUserIsSuperAdmin && roleFilter === 'admin') {
+      setRoleFilter('all');
+    }
+  }, [currentUserIsSuperAdmin, roleFilter]);
+
+  useEffect(() => {
+    if (!currentUserIsSuperAdmin && staffForm.role === 'admin') {
+      setStaffForm((current) => ({
+        ...current,
+        role: 'police',
+      }));
+    }
+  }, [currentUserIsSuperAdmin, staffForm.role]);
+
   const userList = useMemo(() => {
-    return Array.isArray(users) ? users : [];
-  }, [users]);
+    const safeUsers = Array.isArray(users) ? users : [];
+
+    if (currentUserIsSuperAdmin) {
+      return safeUsers;
+    }
+
+    return safeUsers.filter((user) => user.role !== 'admin');
+  }, [users, currentUserIsSuperAdmin]);
 
   const userStats = useMemo(() => {
     const activeUsers = userList.filter((user) => user.status === 'active').length;
+    const adminUsers = userList.filter((user) => user.role === 'admin').length;
     const policeUsers = userList.filter((user) => user.role === 'police').length;
     const driverUsers = userList.filter((user) => user.role === 'driver').length;
     const ownerUsers = userList.filter((user) => user.role === 'owner').length;
     const restrictedUsers = userList.filter((user) =>
-      ['suspended', 'blacklisted'].includes(user.status)
+      ['inactive', 'suspended', 'blacklisted'].includes(user.status)
     ).length;
 
     return [
       {
         label: 'Total Users',
         value: userList.length,
-        note: 'All registered accounts',
+        note: currentUserIsSuperAdmin ? 'All registered accounts' : 'Visible operational accounts',
         icon: Users,
         tone: 'blue',
       },
@@ -124,9 +252,9 @@ export default function ManageUsersPage() {
         tone: 'green',
       },
       {
-        label: 'Police Staff',
-        value: policeUsers,
-        note: 'Admin managed staff',
+        label: currentUserIsSuperAdmin ? 'Admins / Police' : 'Police Staff',
+        value: currentUserIsSuperAdmin ? adminUsers + policeUsers : policeUsers,
+        note: currentUserIsSuperAdmin ? `${adminUsers} admins, ${policeUsers} police` : 'Admin managed staff',
         icon: ShieldCheck,
         tone: 'indigo',
       },
@@ -140,12 +268,12 @@ export default function ManageUsersPage() {
       {
         label: 'Restricted',
         value: restrictedUsers,
-        note: 'Suspended or blacklisted',
+        note: 'Inactive, suspended or blacklisted',
         icon: Ban,
         tone: 'red',
       },
     ];
-  }, [userList]);
+  }, [userList, currentUserIsSuperAdmin]);
 
   const filteredUsers = useMemo(() => {
     let nextUsers = roleFilter === 'all'
@@ -178,21 +306,82 @@ export default function ManageUsersPage() {
     setStaffModalOpen(false);
   };
 
+  const resetEditModal = () => {
+    setEditModalUser(null);
+    setEditForm(initialEditForm);
+    setEditFormError('');
+  };
+
   const updateStaffField = (field, value) => {
-    setStaffForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setStaffForm((current) => {
+      if (field === 'role') {
+        return {
+          ...current,
+          role: value,
+          badge: value === 'police' ? current.badge : '',
+          station: value === 'police' ? current.station : '',
+          rank: value === 'police' ? current.rank : '',
+        };
+      }
+
+      return {
+        ...current,
+        [field]: value,
+      };
+    });
+  };
+
+  const updateEditField = (field, value) => {
+    setEditForm((current) => {
+      if (field === 'role') {
+        return {
+          ...current,
+          role: value,
+          badge: value === 'police' ? current.badge : '',
+          station: value === 'police' ? current.station : '',
+          rank: value === 'police' ? current.rank : '',
+        };
+      }
+
+      return {
+        ...current,
+        [field]: value,
+      };
+    });
   };
 
   const validateStaffForm = () => {
     if (!staffForm.name.trim()) return 'Staff name is required.';
     if (!staffForm.email.trim()) return 'Staff email is required.';
+
+    if (!internalStaffRoles.some((role) => role.value === staffForm.role)) {
+      return 'Please select a valid staff role.';
+    }
+
     if (!staffForm.password || staffForm.password.length < 6) {
       return 'Password must be at least 6 characters.';
     }
-    if (!staffForm.badge.trim()) return 'Police badge ID is required.';
-    if (!staffForm.station.trim()) return 'Police station is required.';
+
+    if (staffForm.role === 'police') {
+      if (!staffForm.badge.trim()) return 'Police badge ID is required.';
+      if (!staffForm.station.trim()) return 'Police station is required.';
+    }
+
+    return '';
+  };
+
+  const validateEditForm = () => {
+    if (!editForm.name.trim()) return 'Name is required.';
+    if (!editForm.email.trim()) return 'Email is required.';
+
+    if (!internalStaffRoles.some((role) => role.value === editForm.role)) {
+      return 'Please select a valid staff role.';
+    }
+
+    if (editForm.role === 'police') {
+      if (!editForm.badge.trim()) return 'Police badge ID is required.';
+      if (!editForm.station.trim()) return 'Police station is required.';
+    }
 
     return '';
   };
@@ -212,10 +401,10 @@ export default function ManageUsersPage() {
       email: staffForm.email.trim().toLowerCase(),
       phone: staffForm.phone.trim(),
       password: staffForm.password,
-      role: 'police',
-      badge: staffForm.badge.trim(),
-      station: staffForm.station.trim(),
-      rank: staffForm.rank.trim(),
+      role: staffForm.role,
+      badge: staffForm.role === 'police' ? staffForm.badge.trim() : '',
+      station: staffForm.role === 'police' ? staffForm.station.trim() : '',
+      rank: staffForm.role === 'police' ? staffForm.rank.trim() : '',
       status: 'active',
     });
 
@@ -228,13 +417,64 @@ export default function ManageUsersPage() {
       addLog({
         userId: currentUser.id || currentUser._id,
         userName: currentUser.name,
-        action: 'Police Staff Created',
-        details: `${staffForm.name.trim()} has been added as police staff.`,
+        action: `${staffForm.role === 'admin' ? 'Admin' : 'Police'} Staff Created`,
+        details: `${staffForm.name.trim()} has been added as ${staffForm.role === 'admin' ? 'system admin' : 'police staff'}.`,
         type: 'admin',
       });
     }
 
     resetStaffModal();
+  };
+
+  const openEditModal = (user) => {
+    setEditModalUser(user);
+    setEditForm(buildStaffFormFromUser(user));
+    setEditFormError('');
+  };
+
+  const handleEditStaff = async (event) => {
+    event.preventDefault();
+
+    if (!editModalUser) {
+      return;
+    }
+
+    const error = validateEditForm();
+
+    if (error) {
+      setEditFormError(error);
+      return;
+    }
+
+    const userId = getUserId(editModalUser);
+
+    const result = await updateUser(userId, {
+      name: editForm.name.trim(),
+      email: editForm.email.trim().toLowerCase(),
+      phone: editForm.phone.trim(),
+      role: editForm.role,
+      badge: editForm.role === 'police' ? editForm.badge.trim() : '',
+      station: editForm.role === 'police' ? editForm.station.trim() : '',
+      rank: editForm.role === 'police' ? editForm.rank.trim() : '',
+      status: editForm.status,
+    });
+
+    if (!result.success) {
+      setEditFormError(result.message || 'User update failed.');
+      return;
+    }
+
+    if (currentUser) {
+      addLog({
+        userId: currentUser.id || currentUser._id,
+        userName: currentUser.name,
+        action: 'User Updated',
+        details: `${editForm.name.trim()} profile was updated by ${currentUser.name}.`,
+        type: 'admin',
+      });
+    }
+
+    resetEditModal();
   };
 
   const openStatusConfirmation = (user, status) => {
@@ -271,7 +511,7 @@ export default function ManageUsersPage() {
         addLog({
           userId: currentUser.id || currentUser._id,
           userName: currentUser.name,
-          action: `User ${status === 'active' ? 'Activated' : status === 'suspended' ? 'Suspended' : 'Blacklisted'}`,
+          action: `User ${status === 'active' ? 'Activated' : status === 'inactive' ? 'Deactivated' : status === 'suspended' ? 'Suspended' : 'Blacklisted'}`,
           details: `User ${user.name || 'Unknown User'} has been ${status} by admin.`,
           type: 'admin',
         });
@@ -290,7 +530,9 @@ export default function ManageUsersPage() {
           <h1 className="text-2xl font-bold text-gray-800">Manage Users</h1>
 
           <p className="text-sm text-gray-500 mt-1">
-            Review users, manage access, and add police staff accounts only.
+            {currentUserIsSuperAdmin
+              ? 'Super Admin can review all users and manage admin or police staff accounts.'
+              : 'Review operational users and add police staff accounts only.'}
           </p>
         </div>
 
@@ -298,7 +540,7 @@ export default function ManageUsersPage() {
           type="button"
           onClick={() => setStaffModalOpen(true)}
           className="manage-users-add-staff-button inline-flex items-center justify-center gap-2 rounded-xl bg-[#0f4c81] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0b3b66] focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/25"
-          title="Add police staff account"
+          title="Add internal staff account"
         >
           <UserPlus size={17} />
           Add Staff
@@ -366,8 +608,8 @@ export default function ManageUsersPage() {
                 type="button"
                 onClick={() => setRoleFilter(role)}
                 className={`manage-users-filter-button px-3 py-1.5 rounded-lg text-xs font-medium ${roleFilter === role
-                    ? 'bg-[#0f4c81] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-[#0f4c81] text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
               >
                 {formatLabel(role)}
@@ -384,7 +626,9 @@ export default function ManageUsersPage() {
           </p>
 
           <p className="manage-users-scroll-hint text-xs text-gray-400">
-            On small screens, scroll horizontally to see all columns.
+            {currentUserIsSuperAdmin
+              ? 'Super Admin view: all user roles are visible.'
+              : 'Admin view: other admins and Super Admin are hidden.'}
           </p>
         </div>
 
@@ -433,7 +677,8 @@ export default function ManageUsersPage() {
                   const isUpdating = updatingId === userId;
                   const status = user.status || 'active';
                   const role = user.role || 'user';
-                  const isAdminUser = role === 'admin';
+                  const isManageable = canManageUser(currentUser, user);
+                  const canEditStaff = isManageable && ['admin', 'police'].includes(role);
 
                   return (
                     <tr
@@ -466,7 +711,7 @@ export default function ManageUsersPage() {
                           className={`manage-users-role-badge inline-block px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeColors[role] || 'bg-gray-100 text-gray-600'
                             }`}
                         >
-                          {formatLabel(role)}
+                          {formatRoleLabel(user)}
                         </span>
                       </td>
 
@@ -500,13 +745,26 @@ export default function ManageUsersPage() {
                       </td>
 
                       <td className="px-5 py-3">
-                        {isAdminUser ? (
+                        {!isManageable ? (
                           <span className="manage-users-protected-label inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-500">
                             <LockKeyhole size={12} />
                             Protected
                           </span>
                         ) : (
                           <div className="manage-users-action-group flex items-center gap-1">
+                            {canEditStaff && (
+                              <button
+                                type="button"
+                                disabled={isUpdating}
+                                onClick={() => openEditModal(user)}
+                                className="manage-users-icon-button p-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50"
+                                title="Edit staff profile"
+                                aria-label={`Edit ${user.name || 'user'}`}
+                              >
+                                <Pencil size={14} />
+                              </button>
+                            )}
+
                             {status !== 'active' && (
                               <button
                                 type="button"
@@ -557,6 +815,23 @@ export default function ManageUsersPage() {
                                 )}
                               </button>
                             )}
+
+                            {status !== 'inactive' && (
+                              <button
+                                type="button"
+                                disabled={isUpdating}
+                                onClick={() => openStatusConfirmation(user, 'inactive')}
+                                className="manage-users-icon-button p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                                title="Deactivate user"
+                                aria-label={`Deactivate ${user.name || 'user'}`}
+                              >
+                                {isUpdating ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={14} />
+                                )}
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>
@@ -575,15 +850,17 @@ export default function ManageUsersPage() {
             <div className="manage-users-modal-header flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#0f4c81]">
-                  Admin Staff Control
+                  {currentUserIsSuperAdmin ? 'Super Admin Staff Control' : 'Admin Staff Control'}
                 </p>
 
                 <h2 className="mt-1 text-xl font-bold text-gray-800">
-                  Add Police Staff
+                  Add Staff
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  This form creates police staff only. Owner and driver accounts use their own registration flow.
+                  {currentUserIsSuperAdmin
+                    ? 'Create internal Admin or Police accounts. Owner and driver accounts use their own BRTA verification flow.'
+                    : 'Create police staff accounts only. Owner and driver accounts use their own BRTA verification flow.'}
                 </p>
               </div>
 
@@ -604,121 +881,17 @@ export default function ManageUsersPage() {
                 </div>
               )}
 
-              <div className="manage-users-form-grid grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <Users size={14} />
-                    Staff Name
-                  </span>
-                  <input
-                    type="text"
-                    value={staffForm.name}
-                    onChange={(event) => updateStaffField('name', event.target.value)}
-                    className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-                    placeholder="e.g. Sergeant Rahim"
-                  />
-                </label>
-
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <BadgeCheck size={14} />
-                    Badge ID
-                  </span>
-                  <input
-                    type="text"
-                    value={staffForm.badge}
-                    onChange={(event) => updateStaffField('badge', event.target.value)}
-                    className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-                    placeholder="e.g. SMP-1024"
-                  />
-                </label>
-
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <ShieldCheck size={14} />
-                    Role
-                  </span>
-                  <input
-                    type="text"
-                    value="Police Staff"
-                    readOnly
-                    className="manage-users-form-input manage-users-readonly-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-500 focus:outline-none"
-                  />
-                </label>
-
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <Building2 size={14} />
-                    Station
-                  </span>
-                  <input
-                    type="text"
-                    value={staffForm.station}
-                    onChange={(event) => updateStaffField('station', event.target.value)}
-                    className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-                    placeholder="e.g. Sylhet Traffic Police"
-                  />
-                </label>
-
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <Briefcase size={14} />
-                    Rank
-                  </span>
-                  <input
-                    type="text"
-                    value={staffForm.rank}
-                    onChange={(event) => updateStaffField('rank', event.target.value)}
-                    className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-                    placeholder="e.g. Sergeant"
-                  />
-                </label>
-
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <Building2 size={14} />
-                    Phone
-                  </span>
-                  <input
-                    type="tel"
-                    value={staffForm.phone}
-                    onChange={(event) => updateStaffField('phone', event.target.value)}
-                    className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-                    placeholder="e.g. 01700000000"
-                  />
-                </label>
-
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <BadgeCheck size={14} />
-                    Email
-                  </span>
-                  <input
-                    type="email"
-                    value={staffForm.email}
-                    onChange={(event) => updateStaffField('email', event.target.value)}
-                    className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-                    placeholder="staff@example.com"
-                  />
-                </label>
-
-                <label className="manage-users-form-field">
-                  <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
-                    <LockKeyhole size={14} />
-                    Temporary Password
-                  </span>
-                  <input
-                    type="password"
-                    value={staffForm.password}
-                    onChange={(event) => updateStaffField('password', event.target.value)}
-                    className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
-                    placeholder="Minimum 6 characters"
-                  />
-                </label>
-              </div>
+              <StaffFormFields
+                form={staffForm}
+                onChange={updateStaffField}
+                roleOptions={internalStaffRoles}
+                passwordRequired
+              />
 
               <div className="manage-users-policy-note mt-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                Owner and driver accounts are intentionally disabled here for safer role separation.
+                {currentUserIsSuperAdmin
+                  ? 'Super Admin can create admin and police staff accounts. Owner and driver accounts must use BRTA verification.'
+                  : 'Only police staff accounts can be created here. Owner, driver, and admin accounts are protected by role separation.'}
               </div>
 
               <div className="manage-users-modal-actions mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -741,6 +914,79 @@ export default function ManageUsersPage() {
                     <Save size={16} />
                   )}
                   Create Staff
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {editModalUser && (
+        <div className="manage-users-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+          <section className="manage-users-staff-modal max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+            <div className="manage-users-modal-header flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#0f4c81]">
+                  Staff Profile Control
+                </p>
+
+                <h2 className="mt-1 text-xl font-bold text-gray-800">
+                  Edit Staff
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Update internal staff profile and role responsibility.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={resetEditModal}
+                className="manage-users-modal-close rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                title="Close Edit Staff form"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditStaff} className="manage-users-staff-form px-6 py-5">
+              {editFormError && (
+                <div className="manage-users-form-error mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {editFormError}
+                </div>
+              )}
+
+              <StaffFormFields
+                form={editForm}
+                onChange={updateEditField}
+                roleOptions={internalStaffRoles}
+                showStatus
+              />
+
+              <div className="manage-users-policy-note mt-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                Super Admin can edit normal admin and police staff profiles. Super Admin account itself remains protected.
+              </div>
+
+              <div className="manage-users-modal-actions mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={resetEditModal}
+                  className="manage-users-cancel-button rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="manage-users-save-button inline-flex items-center justify-center gap-2 rounded-xl bg-[#0f4c81] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0b3b66] disabled:opacity-60"
+                >
+                  {isLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Save size={16} />
+                  )}
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -795,6 +1041,153 @@ export default function ManageUsersPage() {
             </div>
           </section>
         </div>
+      )}
+    </div>
+  );
+}
+
+function StaffFormFields({ form, onChange, roleOptions, passwordRequired = false, showStatus = false }) {
+  return (
+    <div className="manage-users-form-grid grid grid-cols-1 gap-4 md:grid-cols-2">
+      <label className="manage-users-form-field">
+        <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+          <Users size={14} />
+          Staff Name
+        </span>
+        <input
+          type="text"
+          value={form.name}
+          onChange={(event) => onChange('name', event.target.value)}
+          className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+          placeholder="e.g. Sergeant Rahim"
+        />
+      </label>
+
+      <label className="manage-users-form-field">
+        <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+          <ShieldCheck size={14} />
+          Staff Role
+        </span>
+        <select
+          value={form.role}
+          onChange={(event) => onChange('role', event.target.value)}
+          className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+        >
+          {roleOptions.map((role) => (
+            <option key={role.value} value={role.value}>
+              {role.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {form.role === 'police' && (
+        <>
+          <label className="manage-users-form-field">
+            <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+              <BadgeCheck size={14} />
+              Badge ID
+            </span>
+            <input
+              type="text"
+              value={form.badge}
+              onChange={(event) => onChange('badge', event.target.value)}
+              className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+              placeholder="e.g. SMP-1024"
+            />
+          </label>
+
+          <label className="manage-users-form-field">
+            <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+              <Building2 size={14} />
+              Station
+            </span>
+            <input
+              type="text"
+              value={form.station}
+              onChange={(event) => onChange('station', event.target.value)}
+              className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+              placeholder="e.g. Sylhet Traffic Police"
+            />
+          </label>
+
+          <label className="manage-users-form-field">
+            <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+              <Briefcase size={14} />
+              Rank
+            </span>
+            <input
+              type="text"
+              value={form.rank}
+              onChange={(event) => onChange('rank', event.target.value)}
+              className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+              placeholder="e.g. Sergeant"
+            />
+          </label>
+        </>
+      )}
+
+      <label className="manage-users-form-field">
+        <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+          <Building2 size={14} />
+          Phone
+        </span>
+        <input
+          type="tel"
+          value={form.phone}
+          onChange={(event) => onChange('phone', event.target.value)}
+          className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+          placeholder="e.g. 01700000000"
+        />
+      </label>
+
+      <label className="manage-users-form-field">
+        <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+          <BadgeCheck size={14} />
+          Email
+        </span>
+        <input
+          type="email"
+          value={form.email}
+          onChange={(event) => onChange('email', event.target.value)}
+          className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+          placeholder="staff@example.com"
+        />
+      </label>
+
+      {showStatus && (
+        <label className="manage-users-form-field">
+          <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+            <CheckCircle size={14} />
+            Account Status
+          </span>
+          <select
+            value={form.status}
+            onChange={(event) => onChange('status', event.target.value)}
+            className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended</option>
+            <option value="blacklisted">Blacklisted</option>
+          </select>
+        </label>
+      )}
+
+      {passwordRequired && (
+        <label className="manage-users-form-field">
+          <span className="manage-users-field-label flex items-center gap-2 text-xs font-semibold text-gray-500">
+            <LockKeyhole size={14} />
+            Temporary Password
+          </span>
+          <input
+            type="password"
+            value={form.password}
+            onChange={(event) => onChange('password', event.target.value)}
+            className="manage-users-form-input mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20"
+            placeholder="Minimum 6 characters"
+          />
+        </label>
       )}
     </div>
   );

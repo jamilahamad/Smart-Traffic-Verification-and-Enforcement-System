@@ -201,6 +201,11 @@ const api = {
       body: { status },
     }),
 
+  deleteUser: (id) =>
+    request(`/users/${id}`, {
+      method: 'DELETE',
+    }),
+
   // ---------------- ANALYTICS / LOGS ----------------
   getAnalyticsStats: async () => {
     const data = await request('/analytics');
