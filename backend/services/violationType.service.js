@@ -12,6 +12,16 @@ const isObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 const clean = (value) => String(value || "").trim();
 
+const isSuperAdminUser = (user = {}) => {
+  return user.role === "admin" && user.adminLevel === "super_admin";
+};
+
+const assertSuperAdmin = (actor = {}) => {
+  if (!isSuperAdminUser(actor)) {
+    throw new AppError("Only Super Admin can manage violation rules.", 403);
+  }
+};
+
 const escapeRegex = (value) => {
   return clean(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
@@ -212,6 +222,8 @@ const findViolationTypeForCase = async ({ id, code, name }) => {
 };
 
 const createViolationType = async (payload = {}, actor) => {
+  assertSuperAdmin(actor);
+
   const name = clean(payload.name || payload.label || payload.violationName);
 
   if (!name) {
@@ -283,6 +295,8 @@ const getViolationTypeById = async (id) => {
 };
 
 const updateViolationType = async (id, payload = {}, actor) => {
+  assertSuperAdmin(actor);
+
   if (!isObjectId(id)) {
     throw new AppError("Invalid violation type id.", 400);
   }
@@ -389,6 +403,8 @@ const updateViolationTypeStatus = async (id, status, actor) => {
 };
 
 const softDeleteViolationType = async (id, actor) => {
+  assertSuperAdmin(actor);
+
   if (!isObjectId(id)) {
     throw new AppError("Invalid violation type id.", 400);
   }

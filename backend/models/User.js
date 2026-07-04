@@ -29,6 +29,13 @@ const UserSchema = new mongoose.Schema(
       index: true,
     },
 
+    adminLevel: {
+      type: String,
+      enum: ["admin", "super_admin"],
+      default: undefined,
+      index: true,
+    },
+
     status: {
       type: String,
       enum: ["active", "inactive", "suspended", "blacklisted"],
@@ -110,12 +117,72 @@ const UserSchema = new mongoose.Schema(
       trim: true,
     },
 
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     lastLogin: Date,
   },
   {
     timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform(doc, ret) {
+        delete ret.password;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+    },
   }
 );
+
+UserSchema.virtual("isSuperAdmin").get(function () {
+  return this.role === "admin" && this.adminLevel === "super_admin";
+});
+
+UserSchema.virtual("isProtected").get(function () {
+  return this.isSuperAdmin === true;
+});
+
+UserSchema.pre("save", function (next) {
+  if (this.role !== "admin") {
+    this.adminLevel = undefined;
+  }
+
+  if (this.role === "admin" && !this.adminLevel) {
+    this.adminLevel = "admin";
+  }
+
+  next();
+});
+
+UserSchema.index({ role: 1, adminLevel: 1, status: 1 });
+UserSchema.index({ email: 1, role: 1 });
+UserSchema.index({ brtaDriverId: 1, role: 1 });
+UserSchema.index({ brtaOwnerId: 1, role: 1 });
+UserSchema.index({ licenseNumber: 1, role: 1 });
 
 module.exports =
   mongoose.models.User || mongoose.model("User", UserSchema, "users");

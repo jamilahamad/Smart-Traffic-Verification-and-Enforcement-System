@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import api from '../../lib/api';
+import useStore from '../../store/useStore';
 import '../../styles/ViolationManagementPage.css';
 
 const emptyForm = {
@@ -133,6 +134,12 @@ export default function ViolationManagementPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const currentUser = useStore((state) => state.currentUser);
+
+  const canManageViolationRules =
+    currentUser?.role === 'admin' &&
+    currentUser?.adminLevel === 'super_admin';
+
   const loadViolationTypes = async () => {
     try {
       setLoading(true);
@@ -172,6 +179,12 @@ export default function ViolationManagementPage() {
   }, [violationTypes]);
 
   const openCreateModal = () => {
+    if (!canManageViolationRules) {
+      setError('Only Super Admin can create violation rules.');
+      setSuccess('');
+      return;
+    }
+
     setSelectedViolation(null);
     setForm(emptyForm);
     setModalMode('create');
@@ -180,6 +193,12 @@ export default function ViolationManagementPage() {
   };
 
   const openEditModal = (violationType) => {
+    if (!canManageViolationRules) {
+      setError('Only Super Admin can edit violation rules.');
+      setSuccess('');
+      return;
+    }
+
     const item = normalizeViolationType(violationType);
 
     setSelectedViolation(item);
@@ -268,6 +287,12 @@ export default function ViolationManagementPage() {
   const submitForm = async (event) => {
     event.preventDefault();
 
+    if (!canManageViolationRules) {
+      setError('Only Super Admin can save violation rules.');
+      setSuccess('');
+      return;
+    }
+
     const validationMessage = validateForm();
 
     if (validationMessage) {
@@ -309,6 +334,12 @@ export default function ViolationManagementPage() {
   };
 
   const toggleStatus = async (violationType) => {
+    if (!canManageViolationRules) {
+      setError('Only Super Admin can enable or disable violation rules.');
+      setSuccess('');
+      return;
+    }
+
     const item = normalizeViolationType(violationType);
     const nextStatus = item.status === 'active' ? 'inactive' : 'active';
 
@@ -324,6 +355,12 @@ export default function ViolationManagementPage() {
   };
 
   const deleteViolation = async (violationType) => {
+    if (!canManageViolationRules) {
+      setError('Only Super Admin can delete violation rules.');
+      setSuccess('');
+      return;
+    }
+
     const item = normalizeViolationType(violationType);
     const confirmed = window.confirm(
       `Soft delete violation "${item.name}"? Existing cases will remain safe.`
@@ -365,21 +402,30 @@ export default function ViolationManagementPage() {
               Violation Management
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Create, update, enable, disable, and soft-delete traffic violation
-              rules. Police E-Challan will use only active database rules.
+              {canManageViolationRules
+                ? 'Create, update, enable, disable, and soft-delete traffic violation rules. Police E-Challan will use only active database rules.'
+                : 'View traffic violation rules used by Police E-Challan. Only Super Admin can create, update, enable, disable, or delete rules.'}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="violation-create-button inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-          >
-            <Plus size={18} />
-            Create Violation
-          </button>
+          {canManageViolationRules && (
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="violation-create-button inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            >
+              <Plus size={18} />
+              Create Violation
+            </button>
+          )}
         </div>
       </section>
+
+      {!canManageViolationRules && (
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-sm font-medium text-blue-700">
+          Read-only access: Normal Admin can view violation rules, but only Super Admin can manage them.
+        </div>
+      )}
 
       <section className="violation-stats-grid grid gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -413,11 +459,10 @@ export default function ViolationManagementPage() {
 
       {(error || success) && (
         <div
-          className={`rounded-2xl border p-4 text-sm ${
-            error
-              ? 'border-red-100 bg-red-50 text-red-700'
-              : 'border-green-100 bg-green-50 text-green-700'
-          }`}
+          className={`rounded-2xl border p-4 text-sm ${error
+            ? 'border-red-100 bg-red-50 text-red-700'
+            : 'border-green-100 bg-green-50 text-green-700'
+            }`}
         >
           <div className="flex items-center gap-2">
             {error ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
@@ -588,31 +633,39 @@ export default function ViolationManagementPage() {
                           <Eye size={16} />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(item)}
-                          className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-100"
-                          title="Edit"
-                        >
-                          <Edit3 size={16} />
-                        </button>
+                        {canManageViolationRules ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(item)}
+                              className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-100"
+                              title="Edit"
+                            >
+                              <Edit3 size={16} />
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={() => toggleStatus(item)}
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                        >
-                          {item.status === 'active' ? 'Disable' : 'Enable'}
-                        </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleStatus(item)}
+                              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                            >
+                              {item.status === 'active' ? 'Disable' : 'Enable'}
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={() => deleteViolation(item)}
-                          className="rounded-xl border border-red-100 p-2 text-red-600 hover:bg-red-50"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteViolation(item)}
+                              className="rounded-xl border border-red-100 p-2 text-red-600 hover:bg-red-50"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <span className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">
+                            View Only
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -815,17 +868,16 @@ export default function ViolationManagementPage() {
                       const checked =
                         item.value === 'both'
                           ? form.applicableTo.includes('driver') &&
-                            form.applicableTo.includes('owner')
+                          form.applicableTo.includes('owner')
                           : form.applicableTo.includes(item.value);
 
                       return (
                         <label
                           key={item.value}
-                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                            checked
-                              ? 'border-slate-950 bg-slate-950 text-white'
-                              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                          }`}
+                          className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${checked
+                            ? 'border-slate-950 bg-slate-950 text-white'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            }`}
                         >
                           <input
                             type="checkbox"

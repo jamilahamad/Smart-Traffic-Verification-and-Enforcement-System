@@ -110,6 +110,10 @@ const mapUser = (user = {}) => {
     email: user.email || '',
     role: user.role || 'driver',
     status: user.status || 'active',
+    adminLevel: user.adminLevel || '',
+    isSuperAdmin: user.isSuperAdmin === true,
+    isProtected: user.isProtected === true,
+    canBeManagedByCurrentUser: user.canBeManagedByCurrentUser === true,
   };
 };
 
@@ -1303,14 +1307,17 @@ const useStore = create((set, get) => ({
 
       const staffPayload = {
         ...payload,
-        role: 'police',
+        role: ['admin', 'police'].includes(payload?.role) ? payload.role : 'police',
       };
 
       const data = await api.createUser(staffPayload);
       const user = mapUser(data.user || data);
 
       set((state) => ({
-        users: [user, ...state.users.filter((item) => item.id !== user.id)],
+        users: [
+          user,
+          ...state.users.filter((item) => item.id !== user.id && item._id !== user._id),
+        ],
         isLoading: false,
       }));
 
@@ -1319,17 +1326,63 @@ const useStore = create((set, get) => ({
       return {
         success: true,
         user,
-        message: data.message || 'Staff account created successfully.',
+        message: data.message || 'User created successfully.',
       };
     } catch (error) {
       set({
         isLoading: false,
-        apiError: error.message || 'Staff account creation failed.',
+        apiError: error.message || 'User creation failed.',
       });
 
       return {
         success: false,
-        message: error.message || 'Staff account creation failed.',
+        message: error.message || 'User creation failed.',
+      };
+    }
+  },
+
+  updateUser: async (id, payload) => {
+    try {
+      set({ isLoading: true, apiError: '' });
+
+      const staffPayload = {
+        ...payload,
+        role: ['admin', 'police'].includes(payload?.role)
+          ? payload.role
+          : payload?.role,
+      };
+
+      const data = await api.updateUser(id, staffPayload);
+      const user = mapUser(data.user || data);
+
+      set((state) => ({
+        users: state.users.map((item) =>
+          item.id === id || item._id === id ? { ...item, ...user } : item
+        ),
+        currentUser:
+          state.currentUser &&
+            (state.currentUser.id === id || state.currentUser._id === id)
+            ? { ...state.currentUser, ...user }
+            : state.currentUser,
+        isLoading: false,
+      }));
+
+      await get().refreshStats();
+
+      return {
+        success: true,
+        user,
+        message: data.message || 'User updated successfully.',
+      };
+    } catch (error) {
+      set({
+        isLoading: false,
+        apiError: error.message || 'User update failed.',
+      });
+
+      return {
+        success: false,
+        message: error.message || 'User update failed.',
       };
     }
   },
@@ -1337,7 +1390,7 @@ const useStore = create((set, get) => ({
   updateUserStatus: async (id, status) => {
     set((state) => ({
       users: state.users.map((item) =>
-        item.id === id ? { ...item, status } : item
+        item.id === id || item._id === id ? { ...item, status } : item
       ),
     }));
 
@@ -1347,7 +1400,7 @@ const useStore = create((set, get) => ({
 
       set((state) => ({
         users: state.users.map((item) =>
-          item.id === id ? { ...item, ...user } : item
+          item.id === id || item._id === id ? { ...item, ...user } : item
         ),
       }));
 
@@ -1371,10 +1424,38 @@ const useStore = create((set, get) => ({
     }
   },
 
-  deleteUser: (id) => {
-    set((state) => ({
-      users: state.users.filter((item) => item.id !== id),
-    }));
+  deleteUser: async (id) => {
+    try {
+      set({ isLoading: true, apiError: '' });
+
+      const data = await api.deleteUser(id);
+      const user = mapUser(data.user || data);
+
+      set((state) => ({
+        users: state.users.map((item) =>
+          item.id === id || item._id === id ? { ...item, ...user } : item
+        ),
+        isLoading: false,
+      }));
+
+      await get().refreshStats();
+
+      return {
+        success: true,
+        user,
+        message: data.message || 'User deactivated successfully.',
+      };
+    } catch (error) {
+      set({
+        isLoading: false,
+        apiError: error.message || 'User deactivation failed.',
+      });
+
+      return {
+        success: false,
+        message: error.message || 'User deactivation failed.',
+      };
+    }
   },
 
   verifyVehicle: async (registrationNumber, licenseNumber = '') => {

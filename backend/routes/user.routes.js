@@ -34,4 +34,18 @@ router.patch(
   userController.updateUser
 );
 
+router.patch(
+  "/:id/status",
+  protect,
+  authorizeRoles("admin"),
+  userController.updateUserStatus
+);
+
+router.delete(
+  "/:id",
+  protect,
+  authorizeRoles("admin"),
+  userController.deleteUser
+);
+
 module.exports = router;
