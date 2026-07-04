@@ -13,6 +13,7 @@ const driverRoutes = require("./routes/driver.routes");
 const automationRoutes = require("./routes/automation.routes");
 const licenseRenewalRoutes = require("./routes/licenseRenewal.routes");
 const violationTypeRoutes = require("./routes/violationType.routes");
+const connectDatabase = require("./config/database");
 
 const express = require("express");
 const cors = require("cors");
@@ -46,6 +47,19 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+app.use(async (req, res, next) => {
+  if (req.path === "/api/health") {
+    return next();
+  }
+
+  try {
+    await connectDatabase();
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+});
 
 app.get("/api/health", (req, res) => {
   return res.status(200).json({
