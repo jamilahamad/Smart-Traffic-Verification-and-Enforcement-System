@@ -100,6 +100,13 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
   const [otpCode, setOtpCode] = useState('');
   const [otpExpiresAt, setOtpExpiresAt] = useState('');
 
+  const [forgotStep, setForgotStep] = useState('email');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotPassword, setForgotPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [forgotExpiresAt, setForgotExpiresAt] = useState('');
+
   const clearMessages = () => {
     setError('');
     setSuccess('');
@@ -113,6 +120,13 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
     setPendingRegistrationEmail('');
     setOtpCode('');
     setOtpExpiresAt('');
+
+    setForgotStep('email');
+    setForgotEmail('');
+    setForgotOtp('');
+    setForgotPassword('');
+    setForgotConfirmPassword('');
+    setForgotExpiresAt('');
   };
 
   const handleBackHome = () => {
@@ -397,6 +411,99 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
     setError('');
     setSuccess('');
   };
+
+
+  const requestForgotPasswordOtp = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setError('');
+    setSuccess('');
+
+    const email = forgotEmail.trim().toLowerCase();
+
+    if (!email) {
+      setError('Email address is required.');
+      return;
+    }
+
+    if (!emailPattern.test(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = await submitAuthRequest('/auth/password/request-otp', {
+        email,
+      });
+
+      setForgotEmail(data?.email || email);
+      setForgotExpiresAt(data?.expiresAt || '');
+      setForgotOtp('');
+      setForgotPassword('');
+      setForgotConfirmPassword('');
+      setForgotStep('otp');
+      setSuccess(`Password reset code sent to ${data?.email || email}.`);
+    } catch (error) {
+      setError(error?.message || 'Failed to send password reset code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPasswordWithOtp = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setError('');
+    setSuccess('');
+
+    if (!/^\d{6}$/.test(forgotOtp)) {
+      setError('Please enter the 6 digit password reset code.');
+      return;
+    }
+
+    if (!forgotPassword || forgotPassword.length < 6) {
+      setError('New password must be at least 6 characters.');
+      return;
+    }
+
+    if (forgotPassword !== forgotConfirmPassword) {
+      setError('New password and confirm password do not match.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await submitAuthRequest('/auth/password/reset', {
+        email: forgotEmail.trim().toLowerCase(),
+        otp: forgotOtp,
+        password: forgotPassword,
+        confirmPassword: forgotConfirmPassword,
+      });
+
+      setSuccess('Password reset successfully. Please login.');
+      setLoginForm({
+        email: forgotEmail.trim().toLowerCase(),
+        password: '',
+      });
+
+      setMode('login');
+      setForgotStep('email');
+      setForgotEmail('');
+      setForgotOtp('');
+      setForgotPassword('');
+      setForgotConfirmPassword('');
+      setForgotExpiresAt('');
+    } catch (error) {
+      setError(error?.message || 'Password reset failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="login-wrapper min-h-screen bg-gradient-to-br from-[#0d1b2a] via-[#1b2838] to-[#0f4c81]">
       <header className="login-brand-bar">
@@ -470,7 +577,179 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
                 </div>
               )}
 
-              {mode === 'login' ? (
+              {mode === 'forgot' ? (
+                <form
+                  onSubmit={forgotStep === 'otp' ? resetPasswordWithOtp : requestForgotPasswordOtp}
+                  className="login-form space-y-4"
+                  noValidate
+                >
+                  {forgotStep === 'otp' ? (
+                    <>
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Password Reset Code
+                        </label>
+
+                        <div className="login-input-wrap relative">
+                          <Mail
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={forgotOtp}
+                            onChange={(event) =>
+                              setForgotOtp(String(event.target.value || '').replace(/\D/g, '').slice(0, 6))
+                            }
+                            placeholder="Enter 6 digit code"
+                            autoComplete="one-time-code"
+                            className={getInputClass(false)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          New Password
+                        </label>
+
+                        <div className="login-input-wrap relative">
+                          <Lock
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={forgotPassword}
+                            onChange={(event) => setForgotPassword(event.target.value)}
+                            placeholder="Minimum 6 characters"
+                            autoComplete="new-password"
+                            className={getPasswordInputClass(false)}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((current) => !current)}
+                            className="login-password-toggle absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Confirm Password
+                        </label>
+
+                        <div className="login-input-wrap relative">
+                          <Lock
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={forgotConfirmPassword}
+                            onChange={(event) => setForgotConfirmPassword(event.target.value)}
+                            placeholder="Confirm new password"
+                            autoComplete="new-password"
+                            className={getPasswordInputClass(false)}
+                          />
+                        </div>
+                      </div>
+
+                      <p className="login-brta-note rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                        A password reset code was sent to <strong>{forgotEmail}</strong>.
+                        {forgotExpiresAt ? ` Code expires at ${new Date(forgotExpiresAt).toLocaleTimeString()}.` : ''}
+                      </p>
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="login-submit-button w-full py-3 bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
+                      >
+                        {loading ? 'Resetting password...' : 'Reset Password'}
+                        <ChevronRight size={18} />
+                      </button>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={requestForgotPasswordOtp}
+                          disabled={loading}
+                          className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+                        >
+                          Resend Code
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => switchMode('login')}
+                          disabled={loading}
+                          className="rounded-xl border border-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                        >
+                          Back to Login
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="login-field-group">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Account Email Address
+                        </label>
+
+                        <div className="login-input-wrap relative">
+                          <Mail
+                            size={18}
+                            className="login-field-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type="email"
+                            value={forgotEmail}
+                            onChange={(event) => {
+                              setForgotEmail(event.target.value);
+                              setError('');
+                              setSuccess('');
+                            }}
+                            placeholder="Enter your account email"
+                            autoComplete="email"
+                            className={getInputClass(false)}
+                          />
+                        </div>
+                      </div>
+
+                      <p className="login-brta-note rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                        Enter your registered STVES email address. We will send a 6 digit password reset code.
+                      </p>
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="login-submit-button w-full py-3 bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-blue-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
+                      >
+                        {loading ? 'Sending code...' : 'Send Reset Code'}
+                        <ChevronRight size={18} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => switchMode('login')}
+                        disabled={loading}
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                      >
+                        Back to Login
+                      </button>
+                    </>
+                  )}
+                </form>
+              ) : mode === 'login' ? (
                 <form
                   onSubmit={handleLogin}
                   className="login-form space-y-4"
@@ -535,6 +814,27 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
                     {fieldErrors.loginPassword && (
                       <p className="login-field-error">{fieldErrors.loginPassword}</p>
                     )}
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('forgot');
+                        setError('');
+                        setSuccess('');
+                        setFieldErrors(initialFieldErrors);
+                        setForgotStep('email');
+                        setForgotEmail(loginForm.email.trim());
+                        setForgotOtp('');
+                        setForgotPassword('');
+                        setForgotConfirmPassword('');
+                        setForgotExpiresAt('');
+                      }}
+                      className="text-xs font-semibold text-[#0f4c81] hover:underline"
+                    >
+                      Forgot password?
+                    </button>
                   </div>
 
                   <button

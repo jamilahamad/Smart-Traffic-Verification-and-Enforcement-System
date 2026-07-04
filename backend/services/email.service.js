@@ -69,6 +69,50 @@ const sendRegistrationOtpEmail = async ({ to, name, otp, expiresInMinutes }) => 
   });
 };
 
+const sendPasswordResetOtpEmail = async ({ to, name, otp, expiresInMinutes }) => {
+  const safeName = String(name || "STVES User").trim();
+  const subject = "Your STVES password reset code";
+  const fromName = env.emailFromName || "STVES";
+
+  const text = [
+    `Hello ${safeName},`,
+    "",
+    `Your STVES password reset verification code is: ${otp}`,
+    `This code will expire in ${expiresInMinutes} minutes.`,
+    "",
+    "If you did not request this password reset, please ignore this email.",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #0f172a;">
+      <div style="border: 1px solid #dbeafe; border-radius: 18px; overflow: hidden;">
+        <div style="background: #0f4c81; color: #ffffff; padding: 20px 24px;">
+          <h2 style="margin: 0; font-size: 22px;">STVES Password Reset</h2>
+          <p style="margin: 6px 0 0; font-size: 13px; color: #dbeafe;">Smart Traffic Verification & Enforcement System</p>
+        </div>
+        <div style="padding: 24px; background: #ffffff;">
+          <p style="margin: 0 0 12px;">Hello <strong>${safeName}</strong>,</p>
+          <p style="margin: 0 0 16px;">Use the following code to reset your STVES account password.</p>
+          <div style="font-size: 32px; font-weight: 800; letter-spacing: 10px; color: #0f4c81; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px; padding: 18px 22px; text-align: center;">
+            ${otp}
+          </div>
+          <p style="margin: 16px 0 0; color: #475569; font-size: 14px;">This code will expire in <strong>${expiresInMinutes} minutes</strong>.</p>
+          <p style="margin: 16px 0 0; color: #64748b; font-size: 13px;">If you did not request this password reset, please ignore this email.</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return getTransporter().sendMail({
+    from: `"${fromName}" <${env.emailUser}>`,
+    to,
+    subject,
+    text,
+    html,
+  });
+};
+
 module.exports = {
   sendRegistrationOtpEmail,
+  sendPasswordResetOtpEmail,
 };
