@@ -17,6 +17,98 @@ const cleanLower = (value = "") => clean(value).toLowerCase();
 const cleanUpper = (value = "") => clean(value).toUpperCase();
 const onlyDigits = (value = "") => clean(value).replace(/\D/g, "");
 
+const formatOfficialAddress = (address = {}) => {
+  if (!address || typeof address !== "object") {
+    return "";
+  }
+
+  const parts = [
+    address.line,
+    address.city,
+    address.district,
+    address.division,
+  ]
+    .map(clean)
+    .filter(Boolean);
+
+  return [...new Set(parts)].join(", ");
+};
+
+const resolveOfficialAddressForUser = async (user = {}) => {
+  const role = cleanLower(user.role);
+
+  if (role === "driver") {
+    const queries = [];
+
+    if (clean(user.brtaDriverId)) {
+      queries.push({ brtaDriverId: clean(user.brtaDriverId) });
+    }
+
+    if (clean(user.nid)) {
+      queries.push({ nid: clean(user.nid) });
+    }
+
+    if (queries.length === 0) {
+      return "";
+    }
+
+    const brtaDriver = await BrtaDriver.findOne({ $or: queries }).lean();
+
+    return formatOfficialAddress(brtaDriver?.address);
+  }
+
+  if (role === "owner") {
+    const queries = [];
+
+    if (clean(user.brtaOwnerId)) {
+      queries.push({ brtaOwnerId: clean(user.brtaOwnerId) });
+    }
+
+    if (clean(user.nid)) {
+      queries.push({ nid: clean(user.nid) });
+    }
+
+    if (queries.length === 0) {
+      return "";
+    }
+
+    const brtaOwner = await BrtaOwner.findOne({ $or: queries }).lean();
+
+    return formatOfficialAddress(brtaOwner?.address);
+  }
+
+  return "";
+};
+
+const syncOfficialAddressForUser = async (user) => {
+  if (!user) {
+    return user;
+  }
+
+  if (clean(user.address)) {
+    return user;
+  }
+
+  const officialAddress = await resolveOfficialAddressForUser(user);
+
+  if (!officialAddress) {
+    return user;
+  }
+
+  user.address = officialAddress;
+
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        address: officialAddress,
+      },
+    }
+  );
+
+  return user;
+};
+
 const namesMatch = (submitted = "", official = "") => {
   return cleanLower(submitted).replace(/\s+/g, " ") === cleanLower(official).replace(/\s+/g, " ");
 };
@@ -279,6 +371,11 @@ const registerUser = async (payload) => {
     licenseNumber: verifiedIdentity.licenseNumber || licenseNumber,
   });
 
+  const officialAddress =
+    role === "driver"
+      ? formatOfficialAddress(verifiedIdentity.brtaDriver?.address)
+      : formatOfficialAddress(verifiedIdentity.brtaOwner?.address);
+
   const userData = {
     name: clean(name),
     email: normalizedEmail,
@@ -287,6 +384,7 @@ const registerUser = async (payload) => {
     status: "active",
     phone: clean(phone) || verifiedIdentity.phone || "",
     nid: verifiedIdentity.nid,
+    address: officialAddress,
     avatarUrl: brtaAvatar.avatarUrl,
     avatarPublicId: brtaAvatar.avatarPublicId,
     avatarSource: brtaAvatar.avatarSource,
@@ -381,11 +479,12 @@ const loginUser = async (payload) => {
   );
 
   const freshUser = await User.findById(user._id);
-  const token = generateToken(freshUser);
+  const syncedUser = await syncOfficialAddressForUser(freshUser);
+  const token = generateToken(syncedUser);
 
   return {
     token,
-    user: sanitizeUser(freshUser),
+    user: sanitizeUser(syncedUser),
   };
 };
 
@@ -396,7 +495,9 @@ const getCurrentUser = async (userId) => {
     throw new AppError("User not found.", 404);
   }
 
-  return sanitizeUser(user);
+  const syncedUser = await syncOfficialAddressForUser(user);
+
+  return sanitizeUser(syncedUser);
 };
 
 const SELF_PROFILE_ALLOWED_FIELDS = ["name", "email", "phone", "address"];
