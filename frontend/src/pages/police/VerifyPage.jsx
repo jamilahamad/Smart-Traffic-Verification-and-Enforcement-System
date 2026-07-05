@@ -313,14 +313,8 @@ const documentRows = [
 
 const vehicleQuickExamples = [
   {
-    label: 'SYL-METRO-GA-11-1234',
-    plate: 'SYL-METRO-GA-11-1234',
-    license: '',
-  },
-  {
-    label: 'SYL-METRO-GA-22-5678 + DL-SYL-2026-001',
+    label: 'SYL-METRO-GA-22-5678',
     plate: 'SYL-METRO-GA-22-5678',
-    license: 'DL-SYL-2026-001',
   },
 ];
 

@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Clock,
   Car,
-  RefreshCw,
   CheckCircle,
   CreditCard,
 } from 'lucide-react';
@@ -310,15 +309,6 @@ export default function PoliceDashboard({ onNavigate = () => { } }) {
           </div>
 
           <div className="police-dashboard-header-actions flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="police-dashboard-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-            >
-              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
 
             <div className="police-dashboard-shield w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
               <Shield size={24} />
