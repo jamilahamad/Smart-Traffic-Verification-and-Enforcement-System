@@ -9,7 +9,6 @@ import {
   Clock3,
   CreditCard,
   FileWarning,
-  RefreshCw,
   ShieldCheck,
   TrendingUp,
   Users,
@@ -166,8 +165,6 @@ export default function AnalyticsPage() {
   const getStats = useStore((state) => state.getStats);
   const violations = useStore((state) => state.violations);
   const activityLogs = useStore((state) => state.activityLogs);
-  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
 
   const stats = typeof getStats === 'function' ? getStats() : {};
@@ -325,12 +322,6 @@ export default function AnalyticsPage() {
     },
   ];
 
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-  };
-
   return (
     <div className="analytics-page-wrapper animate-fade-in space-y-6">
       <header className="analytics-page-header bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] rounded-2xl p-6 text-white">
@@ -345,18 +336,6 @@ export default function AnalyticsPage() {
               Monitor traffic enforcement performance, case status, fines, and system activity.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            title="Refresh analytics data"
-            aria-label="Refresh analytics data"
-            className="analytics-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
         </div>
       </header>
 

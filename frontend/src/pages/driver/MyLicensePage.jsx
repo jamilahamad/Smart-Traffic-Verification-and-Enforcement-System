@@ -269,7 +269,6 @@ export default function MyLicensePage() {
   const vehicles = useStore((state) => state.vehicles);
   const assignments = useStore((state) => state.assignments);
   const fetchDashboardData = useStore((state) => state.fetchDashboardData);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
 
   const [renewalRequests, setRenewalRequests] = useState([]);
@@ -421,16 +420,6 @@ export default function MyLicensePage() {
     loadMyAssignments();
   }, []);
 
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-
-    await loadRenewalRequests();
-    await loadAssignmentRequests();
-    await loadMyAssignments();
-  };
-
   const handleRenewalInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -540,16 +529,6 @@ export default function MyLicensePage() {
               View your official license details, expiry status, and authorized vehicles.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="my-license-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
         </div>
       </header>
 

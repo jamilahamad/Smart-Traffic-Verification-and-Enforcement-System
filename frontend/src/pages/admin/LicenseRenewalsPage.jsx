@@ -266,16 +266,6 @@ export default function LicenseRenewalsPage() {
               Review driver renewal proof submissions and update official license status.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={loadRequests}
-            disabled={isLoading}
-            className="license-renewals-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
         </div>
       </header>
 
