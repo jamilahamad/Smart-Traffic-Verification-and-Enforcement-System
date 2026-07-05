@@ -9,7 +9,6 @@ import {
   IdCard,
   Loader2,
   Plus,
-  RefreshCw,
   Search,
   Trash2,
   UserPlus,
@@ -298,7 +297,6 @@ export default function AssignDriversPage({ onNavigate = () => { } }) {
   const assignments = useStore((state) => state.assignments);
   const fetchDashboardData = useStore((state) => state.fetchDashboardData);
   const addLog = useStore((state) => state.addLog);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
 
   const [form, setForm] = useState(initialForm);
@@ -543,14 +541,6 @@ export default function AssignDriversPage({ onNavigate = () => { } }) {
   useEffect(() => {
     loadOwnerAssignments();
   }, []);
-
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-
-    await loadOwnerAssignments();
-  };
 
   const handleSearchDriver = async () => {
     const query = driverSearchQuery.trim();
@@ -806,16 +796,6 @@ export default function AssignDriversPage({ onNavigate = () => { } }) {
               Assign authorized drivers to your registered vehicles and manage active assignments.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="assign-drivers-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
         </div>
       </header>
 

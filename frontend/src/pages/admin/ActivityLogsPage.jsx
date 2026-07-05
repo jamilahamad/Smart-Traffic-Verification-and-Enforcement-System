@@ -3,7 +3,6 @@ import {
   History,
   Filter,
   Search,
-  RefreshCw,
   Activity,
   Shield,
   KeyRound,
@@ -88,8 +87,6 @@ const getLogUserName = (log) => {
 
 export default function ActivityLogsPage() {
   const activityLogs = useStore((state) => state.activityLogs);
-  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
 
   const [typeFilter, setTypeFilter] = useState('all');
@@ -133,12 +130,6 @@ export default function ActivityLogsPage() {
     }, {});
   }, [logList]);
 
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-  };
-
   return (
     <div className="activity-logs-wrapper animate-fade-in space-y-6">
       <header className="activity-logs-header bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] rounded-2xl p-6 text-white">
@@ -153,16 +144,6 @@ export default function ActivityLogsPage() {
               Complete audit trail of all verification, admin, case, and system activities.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="activity-logs-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
         </div>
       </header>
 
