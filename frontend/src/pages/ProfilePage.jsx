@@ -15,7 +15,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  RefreshCw,
   Save,
   Shield,
   UserRound,
@@ -241,7 +240,6 @@ export default function ProfilePage() {
   const setCurrentUser = useStore((state) => state.setCurrentUser);
   const updateCurrentUser = useStore((state) => state.updateCurrentUser);
   const addLog = useStore((state) => state.addLog);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
 
   const currentUserId = getId(currentUser);
@@ -447,12 +445,6 @@ export default function ProfilePage() {
     return '';
   };
 
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-  };
-
   const handleSave = async (event) => {
     event.preventDefault();
 
@@ -498,10 +490,6 @@ export default function ProfilePage() {
         });
       }
 
-      if (typeof fetchDashboardData === 'function') {
-        await fetchDashboardData();
-      }
-
       if (typeof addLog === 'function' && currentUser) {
         addLog({
           userId: currentUser.id || currentUser._id,
@@ -514,6 +502,11 @@ export default function ProfilePage() {
 
       setSuccess('Profile updated successfully.');
       setEditing(false);
+
+      if (typeof fetchDashboardData === 'function') {
+        fetchDashboardData().catch(() => {
+        });
+      }
     } catch (err) {
       console.error('Profile update failed:', err);
       setLocalError(err.message || 'Profile update failed.');
@@ -654,15 +647,6 @@ export default function ProfilePage() {
           </div>
 
           <div className="profile-page-header-actions flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="profile-page-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-            >
-              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
 
             {!editing && (
               <button

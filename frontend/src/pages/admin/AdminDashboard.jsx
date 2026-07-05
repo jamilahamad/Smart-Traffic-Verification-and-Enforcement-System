@@ -7,7 +7,6 @@ import {
   TrendingUp,
   Clock,
   Ban,
-  RefreshCw,
 } from 'lucide-react';
 
 import useStore from '../../store/useStore';
@@ -320,16 +319,6 @@ export default function AdminDashboard({ onNavigate = () => { } }) {
               Welcome back, Admin. Here's your system overview.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="admin-dashboard-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
         </div>
       </header>
 

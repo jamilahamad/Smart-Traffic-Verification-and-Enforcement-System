@@ -6,7 +6,6 @@ import {
   CheckCircle,
   FileWarning,
   Plus,
-  RefreshCw,
   Shield,
   Users,
 } from 'lucide-react';
@@ -408,16 +407,6 @@ export default function OwnerDashboard({ onNavigate = () => { } }) {
               Monitor your vehicles, assigned drivers, compliance status, and violations.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="owner-dashboard-refresh-button bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 disabled:opacity-60"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
         </div>
       </header>
 
