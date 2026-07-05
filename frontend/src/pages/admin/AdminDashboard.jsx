@@ -207,10 +207,7 @@ export default function AdminDashboard({ onNavigate = () => { } }) {
   const getStats = useStore((state) => state.getStats);
   const violations = useStore((state) => state.violations);
   const activityLogs = useStore((state) => state.activityLogs);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
-  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
-
   const stats = getStats();
   const violationList = Array.isArray(violations) ? violations : [];
 
@@ -294,10 +291,6 @@ export default function AdminDashboard({ onNavigate = () => { } }) {
 
   const recentCases = violationList.slice(0, 5);
   const recentActivities = Array.isArray(activityLogs) ? activityLogs.slice(0, 5) : [];
-
-  const handleRefresh = async () => {
-    await fetchDashboardData();
-  };
 
   const handleReviewCases = () => {
     rememberAllCasesFilter('pending');

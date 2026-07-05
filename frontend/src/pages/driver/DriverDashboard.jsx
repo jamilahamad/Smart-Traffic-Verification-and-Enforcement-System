@@ -254,14 +254,12 @@ export default function DriverDashboard({ onNavigate = () => { } }) {
   const violations = useStore((state) => state.violations);
   const vehicles = useStore((state) => state.vehicles);
   const assignments = useStore((state) => state.assignments);
-  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
 
   const [serverViolations, setServerViolations] = useState([]);
   const [serverViolationsLoaded, setServerViolationsLoaded] = useState(false);
   const [serverAssignments, setServerAssignments] = useState([]);
-  const [serverAssignmentsLoaded, setServerAssignmentsLoaded] = useState(false);;
+  const [serverAssignmentsLoaded, setServerAssignmentsLoaded] = useState(false);
 
   const extractDriverViolations = (response) => {
     const payload = response?.data || response || {};
@@ -491,15 +489,6 @@ export default function DriverDashboard({ onNavigate = () => { } }) {
           : `${formatMoney(totalFine)} total fine`,
     },
   ];
-
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-
-    await loadDriverDashboardViolations();
-    await loadDriverAssignments();
-  };
 
   return (
     <div className="driver-dashboard-wrapper animate-fade-in space-y-6">
