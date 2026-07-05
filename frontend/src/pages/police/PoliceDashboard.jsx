@@ -184,8 +184,6 @@ export default function PoliceDashboard({ onNavigate = () => { } }) {
   const vehicles = useStore((state) => state.vehicles);
   const verificationLogs = useStore((state) => state.verificationLogs);
   const activityLogs = useStore((state) => state.activityLogs);
-  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
 
   const currentUserId = getUserId(currentUser);
@@ -277,12 +275,6 @@ export default function PoliceDashboard({ onNavigate = () => { } }) {
 
   const recentCases = myCases.slice(0, 5);
   const recentActivities = (logList.length > 0 ? logList : activityList).slice(0, 5);
-
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-  };
 
   return (
     <div className="police-dashboard-wrapper animate-fade-in space-y-6">

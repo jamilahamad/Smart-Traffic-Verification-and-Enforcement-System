@@ -267,8 +267,6 @@ export default function OwnerDashboard({ onNavigate = () => { } }) {
   const vehicles = useStore((state) => state.vehicles);
   const violations = useStore((state) => state.violations);
   const assignments = useStore((state) => state.assignments);
-  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
-  const isLoading = useStore((state) => state.isLoading);
   const apiError = useStore((state) => state.apiError);
   const [localAssignments, setLocalAssignments] = useState([]);
 
@@ -383,14 +381,6 @@ export default function OwnerDashboard({ onNavigate = () => { } }) {
   useEffect(() => {
     loadOwnerAssignments();
   }, []);
-
-  const handleRefresh = async () => {
-    if (typeof fetchDashboardData === 'function') {
-      await fetchDashboardData();
-    }
-
-    await loadOwnerAssignments();
-  };
 
   return (
     <div className="owner-dashboard-wrapper animate-fade-in space-y-6">
