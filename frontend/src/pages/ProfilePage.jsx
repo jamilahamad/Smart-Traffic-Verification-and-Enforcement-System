@@ -5,6 +5,9 @@ import {
   Car,
   CheckCircle,
   Edit3,
+  Eye,
+  EyeOff,
+  Lock,
   IdCard,
   KeyRound,
   ListChecks,
@@ -249,6 +252,15 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [localError, setLocalError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
   const profileItems = useMemo(() => {
     return [
@@ -507,6 +519,106 @@ export default function ProfilePage() {
       setLocalError(err.message || 'Profile update failed.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const resetPasswordForm = () => {
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+    setPasswordVisible(false);
+  };
+
+  const setPasswordField = (field, value) => {
+    setPasswordForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    setLocalError('');
+    setSuccess('');
+  };
+
+  const validatePasswordForm = () => {
+    if (!passwordForm.currentPassword) {
+      return 'Current password is required.';
+    }
+
+    if (!passwordForm.newPassword || passwordForm.newPassword.length < 6) {
+      return 'New password must be at least 6 characters.';
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return 'New password and confirm password do not match.';
+    }
+
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      return 'New password must be different from current password.';
+    }
+
+    return '';
+  };
+
+  const handleChangePassword = async (event) => {
+    event.preventDefault();
+
+    setLocalError('');
+    setSuccess('');
+
+    const validationError = validatePasswordForm();
+
+    if (validationError) {
+      setLocalError(validationError);
+      return;
+    }
+
+    if (typeof api.changePassword !== 'function') {
+      setLocalError('Change password API function not found in api.js.');
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+
+      const response = await api.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+        confirmPassword: passwordForm.confirmPassword,
+      });
+
+      const updatedUser = response?.user || response?.data?.user || null;
+
+      if (updatedUser) {
+        if (typeof updateCurrentUser === 'function') {
+          updateCurrentUser(updatedUser);
+        } else if (typeof setCurrentUser === 'function') {
+          setCurrentUser({
+            ...currentUser,
+            ...updatedUser,
+          });
+        }
+      }
+
+      if (typeof addLog === 'function' && currentUser) {
+        addLog({
+          userId: currentUser.id || currentUser._id,
+          userName: currentUser.name || 'User',
+          action: 'Password Changed',
+          details: `${currentUser.name || 'User'} changed account password.`,
+          type: 'security',
+        });
+      }
+
+      setSuccess('Password changed successfully.');
+      resetPasswordForm();
+      setShowChangePassword(false);
+    } catch (err) {
+      console.error('Password change failed:', err);
+      setLocalError(err.message || 'Password change failed.');
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -810,6 +922,90 @@ export default function ProfilePage() {
             </div>
           ))}
         </div>
+
+        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0f4c81]">
+                <KeyRound size={18} />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-800">Change Password</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Update your login password using your current password.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowChangePassword((current) => !current);
+                resetPasswordForm();
+                setLocalError('');
+                setSuccess('');
+              }}
+              className="rounded-xl bg-[#0f4c81] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0d3d67]"
+            >
+              {showChangePassword ? 'Close' : 'Change Password'}
+            </button>
+          </div>
+
+          {showChangePassword && (
+            <form onSubmit={handleChangePassword} className="mt-4 grid gap-4 md:grid-cols-3">
+              <PasswordInput
+                label="Current Password"
+                value={passwordForm.currentPassword}
+                onChange={(value) => setPasswordField('currentPassword', value)}
+                showPassword={passwordVisible}
+                onToggle={() => setPasswordVisible((current) => !current)}
+                placeholder="Current password"
+              />
+
+              <PasswordInput
+                label="New Password"
+                value={passwordForm.newPassword}
+                onChange={(value) => setPasswordField('newPassword', value)}
+                showPassword={passwordVisible}
+                onToggle={() => setPasswordVisible((current) => !current)}
+                placeholder="Minimum 6 characters"
+              />
+
+              <PasswordInput
+                label="Confirm Password"
+                value={passwordForm.confirmPassword}
+                onChange={(value) => setPasswordField('confirmPassword', value)}
+                showPassword={passwordVisible}
+                onToggle={() => setPasswordVisible((current) => !current)}
+                placeholder="Confirm new password"
+              />
+
+              <div className="md:col-span-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetPasswordForm();
+                    setShowChangePassword(false);
+                    setLocalError('');
+                  }}
+                  className="rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-semibold text-gray-600 hover:bg-white"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={passwordSaving}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] px-4 py-2.5 text-xs font-semibold text-white hover:shadow-lg disabled:opacity-60"
+                >
+                  {passwordSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                  {passwordSaving ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </section>
     </div>
   );
@@ -829,6 +1025,40 @@ function FormInput({ label, value, onChange, placeholder, type = 'text' }) {
         placeholder={placeholder}
         className="profile-page-input w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
       />
+    </div>
+  );
+}
+
+function PasswordInput({ label, value, onChange, placeholder, showPassword, onToggle }) {
+  return (
+    <div className="profile-page-form-group">
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        {label}
+      </label>
+
+      <div className="relative">
+        <Lock
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
+
+        <input
+          type={showPassword ? 'text' : 'password'}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="profile-page-input w-full rounded-xl border border-gray-200 px-10 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+        />
+
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
     </div>
   );
 }

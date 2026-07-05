@@ -67,6 +67,14 @@ const updateMe = asyncHandler(async (req, res) => {
   });
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const user = await authService.changeCurrentPassword(req.user._id, req.body);
+
+  return sendSuccess(res, 200, "Password changed successfully.", {
+    user,
+  });
+});
+
 module.exports = {
   register,
   requestRegistrationOtp,
@@ -76,4 +84,5 @@ module.exports = {
   login,
   me,
   updateMe,
+  changePassword,
 };

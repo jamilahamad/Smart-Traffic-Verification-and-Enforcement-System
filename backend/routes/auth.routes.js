@@ -13,5 +13,6 @@ router.post("/password/reset", authController.resetPasswordWithOtp);
 router.post("/login", authController.login);
 router.get("/me", protect, authController.me);
 router.patch("/me", protect, authController.updateMe);
+router.patch("/me/password", protect, authController.changePassword);
 
 module.exports = router;
