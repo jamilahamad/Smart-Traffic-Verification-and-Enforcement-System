@@ -142,6 +142,11 @@ const UserSchema = new mongoose.Schema(
     },
 
     lastLogin: Date,
+
+    passwordUpdatedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

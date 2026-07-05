@@ -209,6 +209,12 @@ const api = {
     });
   },
 
+  changePassword: (payload) =>
+    request('/auth/me/password', {
+      method: 'PATCH',
+      body: payload,
+    }),
+
   updateUserStatus: (id, status) =>
     request(`/users/${id}`, {
       method: 'PATCH',

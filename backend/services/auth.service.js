@@ -189,6 +189,7 @@ const sanitizeUser = (user) => {
     station: obj.station || "",
     rank: obj.rank || "",
     lastLogin: obj.lastLogin || null,
+    passwordUpdatedAt: obj.passwordUpdatedAt || null,
     createdAt: obj.createdAt,
     updatedAt: obj.updatedAt,
   };
@@ -763,6 +764,53 @@ const getCurrentUser = async (userId) => {
   return sanitizeUser(syncedUser);
 };
 
+const changeCurrentPassword = async (userId, payload = {}) => {
+  const currentPassword = String(payload.currentPassword || "");
+  const newPassword = String(payload.newPassword || payload.password || "");
+  const confirmPassword = String(
+    payload.confirmPassword || payload.newPassword || payload.password || ""
+  );
+
+  if (!currentPassword) {
+    throw new AppError("Current password is required.", 400);
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new AppError("New password must be at least 6 characters.", 400);
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new AppError("New password and confirm password do not match.", 400);
+  }
+
+  if (currentPassword === newPassword) {
+    throw new AppError("New password must be different from current password.", 400);
+  }
+
+  const user = await User.findById(userId).select("+password");
+
+  if (!user) {
+    throw new AppError("User not found.", 404);
+  }
+
+  if (user.status !== "active") {
+    throw new AppError(`Account is ${user.status}. Please contact admin.`, 403);
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+  if (!isMatch) {
+    throw new AppError("Current password is incorrect.", 400);
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  user.passwordUpdatedAt = new Date();
+
+  await user.save();
+
+  return sanitizeUser(user);
+};
+
 const SELF_PROFILE_ALLOWED_FIELDS = ["name", "email", "phone", "address"];
 
 const SELF_PROFILE_BLOCKED_FIELDS = [
@@ -865,4 +913,5 @@ module.exports = {
   loginUser,
   getCurrentUser,
   updateCurrentUser,
+  changeCurrentPassword,
 };
