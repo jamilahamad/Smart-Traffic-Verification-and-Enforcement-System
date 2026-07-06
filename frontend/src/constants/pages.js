@@ -3,7 +3,6 @@ import { ROLES } from './roles';
 export const PAGES = {
   LANDING: 'landing',
   LOGIN: 'login',
-  PUBLIC_VERIFY: 'public-verify',
 
   DASHBOARD: 'dashboard',
   PROFILE: 'profile',
@@ -34,7 +33,6 @@ export const PAGES = {
 export const PUBLIC_PAGES = [
   PAGES.LANDING,
   PAGES.LOGIN,
-  PAGES.PUBLIC_VERIFY,
 ];
 
 export const PAGE_ACCESS = {

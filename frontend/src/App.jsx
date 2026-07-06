@@ -8,7 +8,6 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import PublicVerifyPage from './pages/PublicVerifyPage';
 import ProfilePage from './pages/ProfilePage';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -39,7 +38,7 @@ import OwnerViolationsPage from './pages/owner/OwnerViolationsPage';
 
 import './styles/AppLayout.css';
 
-const publicPages = ['landing', 'login', 'public-verify'];
+const publicPages = ['landing', 'login'];
 
 const normalizePage = (page) => {
   const aliases = {
@@ -75,10 +74,8 @@ const getInitialPage = () => {
   const path = window.location.pathname.toLowerCase();
 
   const pageFromUrl = params.get('page');
-  const hasQR = params.get('qr') || params.get('code');
-
-  if (hasQR || path.includes('verify')) {
-    return 'public-verify';
+  if (params.get('qr') || params.get('code') || path.includes('verify')) {
+    return 'landing';
   }
 
   if (pageFromUrl) {
@@ -260,14 +257,6 @@ export default function App() {
   };
 
   const renderPublicPage = () => {
-    if (currentPage === 'public-verify') {
-      return (
-        <PublicVerifyPage
-          onBack={() => handleNavigate('landing')}
-          onLogin={() => handleNavigate('login')}
-        />
-      );
-    }
 
     if (currentPage === 'login') {
       return (
@@ -281,7 +270,6 @@ export default function App() {
     return (
       <LandingPage
         onLogin={() => handleNavigate('login')}
-        onVerify={() => handleNavigate('public-verify')}
       />
     );
   };
