@@ -9,12 +9,12 @@ import {
   LogOut,
   Menu,
   RefreshCw,
-  Shield,
   User,
   X,
 } from 'lucide-react';
 
 import UserAvatar from '../common/UserAvatar';
+import BrandLogo from '../common/BrandLogo';
 import api from '../../lib/api';
 import useStore from '../../store/useStore';
 import {
@@ -411,25 +411,11 @@ export default function Navbar({
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <button
-            type="button"
+          <BrandLogo
+            variant="navbar"
             onClick={() => onNavigate('dashboard')}
-            className="stves-navbar-brand flex items-center gap-2"
-          >
-            <div className="stves-navbar-logo w-9 h-9 bg-gradient-to-br from-[#0f4c81] to-[#1a73e8] rounded-lg flex items-center justify-center">
-              <Shield size={20} className="text-white" />
-            </div>
-
-            <div className="hidden sm:block text-left">
-              <h1 className="text-lg font-bold text-gray-800 leading-tight">
-                STVES
-              </h1>
-
-              <p className="text-[10px] text-gray-400 leading-tight -mt-0.5">
-                Smart Traffic Verification
-              </p>
-            </div>
-          </button>
+            ariaLabel="Go to dashboard"
+          />
         </div>
 
         <div className="stves-navbar-right flex items-center gap-2">

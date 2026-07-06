@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Shield,
   QrCode,
   Search,
   FileWarning,
@@ -12,7 +11,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-
+import BrandLogo from '../components/common/BrandLogo';
 import '../styles/LandingPage.css';
 
 const platformFeatures = [
@@ -178,25 +177,11 @@ export default function LandingPage({ onLogin, onVerify }) {
       <nav className="landing-navbar fixed top-0 left-0 right-0 z-50">
         <div className="landing-nav-shell mx-auto mt-3 max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="landing-nav-content flex h-16 items-center justify-between rounded-2xl border border-white/70 bg-white/90 px-4 shadow-lg shadow-slate-900/5 backdrop-blur-xl">
-            <button
-              type="button"
-              onClick={handleAuthOpen}
-              className="landing-brand-block flex items-center gap-3 text-left"
-              aria-label="Go to login"
-            >
-              <div className="landing-brand-icon flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#0f4c81] to-[#1a73e8] shadow-lg shadow-blue-200">
-                <Shield size={22} className="text-white" />
-              </div>
-
-              <div>
-                <span className="landing-brand-name block text-xl font-black leading-tight text-gray-900">
-                  STVES
-                </span>
-                <span className="landing-brand-subtitle hidden text-[11px] font-medium text-gray-400 sm:block">
-                  Smart Traffic Verification
-                </span>
-              </div>
-            </button>
+            <BrandLogo
+              variant="landing"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              ariaLabel="Go to landing page"
+            />
 
             <div className="landing-nav-links hidden items-center gap-1 lg:flex">
               {landingNavLinks.map((item) => (
@@ -493,10 +478,11 @@ export default function LandingPage({ onLogin, onVerify }) {
 
       <footer className="landing-footer px-4 py-10 text-white">
         <div className="mx-auto max-w-7xl text-center">
-          <div className="flex items-center justify-center gap-2">
-            <Shield size={22} className="text-blue-400" />
-            <span className="text-2xl font-black tracking-tight">STVES</span>
-          </div>
+          <BrandLogo
+            variant="footer"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            ariaLabel="Go to landing page"
+          />
 
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">
             Smart Traffic Verification & Enforcement System for digital vehicle

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Shield,
   Eye,
   EyeOff,
   Mail,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { API_BASE_URL, tokenStorage } from '../lib/api';
+import BrandLogo from '../components/common/BrandLogo';
 import '../styles/LoginPage.css';
 
 const initialRegisterForm = {
@@ -508,23 +508,11 @@ export default function LoginPage({ onBack, onLoginSuccess }) {
     <div className="login-wrapper min-h-screen bg-gradient-to-br from-[#0d1b2a] via-[#1b2838] to-[#0f4c81]">
       <header className="login-brand-bar">
         <div className="login-brand-inner">
-          <button
-            type="button"
+          <BrandLogo
+            variant="login"
             onClick={handleBackHome}
-            className="login-brand-left"
-            aria-label="Back to landing page"
-          >
-            <div className="login-brand-icon">
-              <Shield size={24} className="text-white" />
-            </div>
-
-            <div className="login-brand-text text-left">
-              <h1 className="text-2xl font-black text-white tracking-tight">STVES</h1>
-              <p className="text-xs font-medium text-blue-100">
-                Smart Traffic Verification & Enforcement System
-              </p>
-            </div>
-          </button>
+            ariaLabel="Back to landing page"
+          />
 
           <button
             type="button"
