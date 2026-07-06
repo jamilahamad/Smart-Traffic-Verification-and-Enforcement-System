@@ -15,6 +15,7 @@ import {
 
 import api from '../lib/api';
 import { parseSTVESQR } from '../utils/qr';
+import BrandLogo from '../components/common/BrandLogo';
 import '../styles/PublicVerifyPage.css';
 
 const sampleQRValues = [
@@ -69,9 +70,9 @@ const normalizePublicResult = (response, parsed) => {
       status,
       valid: Boolean(
         vehicle.valid ??
-          data.valid ??
-          data.verification?.isCompliant ??
-          (getStatusValidity(status) && issues.length === 0)
+        data.valid ??
+        data.verification?.isCompliant ??
+        (getStatusValidity(status) && issues.length === 0)
       ),
       brand: vehicle.brand || data.brand || 'Hidden',
       model: vehicle.model || data.model || 'Hidden',
@@ -100,9 +101,9 @@ const normalizePublicResult = (response, parsed) => {
       status,
       valid: Boolean(
         license.valid ??
-          data.valid ??
-          data.verification?.isCompliant ??
-          (getStatusValidity(status) && issues.length === 0)
+        data.valid ??
+        data.verification?.isCompliant ??
+        (getStatusValidity(status) && issues.length === 0)
       ),
       holderName: license.holderName || data.holderName || 'Hidden',
       licenseClass:
@@ -209,22 +210,22 @@ export default function PublicVerifyPage({ onBack, onLogin }) {
   };
 
   const goToLandingSection = (sectionId = '') => {
-  if (typeof onBack === 'function') {
-    onBack();
+    if (typeof onBack === 'function') {
+      onBack();
 
-    if (sectionId) {
-      setTimeout(() => {
-        document.getElementById(sectionId)?.scrollIntoView({
-          behavior: 'smooth',
-        });
-      }, 120);
+      if (sectionId) {
+        setTimeout(() => {
+          document.getElementById(sectionId)?.scrollIntoView({
+            behavior: 'smooth',
+          });
+        }, 120);
+      }
+
+      return;
     }
 
-    return;
-  }
-
-  window.location.href = sectionId ? `/#${sectionId}` : '/';
-};
+    window.location.href = sectionId ? `/#${sectionId}` : '/';
+  };
 
   const handleSampleClick = (value) => {
     setQrValue(value);
@@ -241,55 +242,45 @@ export default function PublicVerifyPage({ onBack, onLogin }) {
   return (
     <div className="public-verify-wrapper min-h-screen bg-slate-100">
       <header className="public-verify-nav">
-  <div className="public-verify-nav-shell">
-    <div className="public-verify-nav-content">
-      <button
-        type="button"
-        onClick={() => goToLandingSection()}
-        className="public-verify-brand"
-        aria-label="Back to landing page"
-      >
-        <div className="public-verify-brand-icon">
-          <ShieldCheck size={22} />
+        <div className="public-verify-nav-shell">
+          <div className="public-verify-nav-content">
+            <BrandLogo
+              variant="public"
+              onClick={() => goToLandingSection()}
+              ariaLabel="Back to landing page"
+            />
+
+            <nav className="public-verify-links" aria-label="Public verification navigation">
+              <button type="button" onClick={() => goToLandingSection('features')}>
+                Features
+              </button>
+
+              <button type="button" onClick={() => goToLandingSection('process')}>
+                Process
+              </button>
+
+              <button type="button" onClick={() => goToLandingSection('roles')}>
+                Roles
+              </button>
+
+              <span className="public-verify-active-link">
+                Public Verify
+              </span>
+            </nav>
+
+            <div className="public-verify-nav-actions">
+              <button
+                type="button"
+                onClick={handleLogin}
+                className="public-verify-login-button"
+              >
+                Login / Register
+                <LogIn size={16} />
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div className="text-left">
-          <p className="public-verify-brand-name">STVES</p>
-          <p className="public-verify-brand-subtitle">Smart Traffic Verification</p>
-        </div>
-      </button>
-
-      <nav className="public-verify-links" aria-label="Public verification navigation">
-        <button type="button" onClick={() => goToLandingSection('features')}>
-          Features
-        </button>
-
-        <button type="button" onClick={() => goToLandingSection('process')}>
-          Process
-        </button>
-
-        <button type="button" onClick={() => goToLandingSection('roles')}>
-          Roles
-        </button>
-
-        <span className="public-verify-active-link">
-          Public Verify
-        </span>
-      </nav>
-
-      <div className="public-verify-nav-actions">
-        <button
-          type="button"
-          onClick={handleLogin}
-          className="public-verify-login-button"
-        >
-          Login / Register
-          <LogIn size={16} />
-        </button>
-      </div>
-    </div>
-  </div>
-</header>
+      </header>
 
       <main className="public-verify-main">
         <section className="public-verify-hero">

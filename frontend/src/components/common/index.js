@@ -5,3 +5,4 @@ export { default as Select } from './Select';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as Modal } from './Modal';
 export { default as Table } from './Table';
+export { default as BrandLogo } from './BrandLogo';
