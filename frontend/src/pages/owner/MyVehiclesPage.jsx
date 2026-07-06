@@ -90,6 +90,20 @@ const formatDate = (value) => {
   });
 };
 
+const toDateInputValue = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+};
+
 const isExpiredDate = (value) => {
   if (!value) {
     return false;
@@ -217,6 +231,26 @@ const getCreateVehicleFunction = () => {
   return null;
 };
 
+const buildFormFromVerifiedVehicle = (vehicle = {}) => {
+  return {
+    ...initialForm,
+    registrationNumber: cleanPlate(vehicle.registrationNumber),
+    vehicleType: vehicle.vehicleType || 'car',
+    brand: vehicle.brand || '',
+    model: vehicle.model || '',
+    year: vehicle.year ? String(vehicle.year) : '',
+    color: vehicle.color || '',
+    chassisNumber: vehicle.chassisNumber || '',
+    engineNumber: vehicle.engineNumber || '',
+    registrationDate: toDateInputValue(vehicle.registrationDate),
+    registrationExpiry: toDateInputValue(vehicle.registrationExpiry),
+    fitnessExpiry: toDateInputValue(vehicle.fitnessExpiry),
+    taxTokenExpiry: toDateInputValue(vehicle.taxTokenExpiry),
+    routePermitExpiry: toDateInputValue(vehicle.routePermitExpiry),
+    insuranceExpiry: toDateInputValue(vehicle.insuranceExpiry),
+  };
+};
+
 export default function MyVehiclesPage({ onNavigate = () => { } }) {
   const currentUser = useStore((state) => state.currentUser);
   const vehicles = useStore((state) => state.vehicles);
@@ -231,6 +265,9 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [verifyingVehicle, setVerifyingVehicle] = useState(false);
+  const [verifiedVehicle, setVerifiedVehicle] = useState(null);
+  const [verifiedRegistrationNumber, setVerifiedRegistrationNumber] = useState('');
   const [localError, setLocalError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -286,6 +323,11 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
 
   const hasOwnerVehicles = ownerVehicles.length > 0;
   const hasActiveSearchOrFilter = Boolean(searchQ.trim()) || statusFilter !== 'all';
+  const isVehicleVerified = Boolean(
+    verifiedVehicle &&
+    verifiedRegistrationNumber &&
+    cleanPlate(form.registrationNumber) === verifiedRegistrationNumber
+  );
 
   const emptyStateTitle = hasOwnerVehicles
     ? 'No vehicles match your search'
@@ -323,6 +365,15 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
   ];
 
   const setField = (field, value) => {
+    if (field === 'registrationNumber') {
+      const nextPlate = cleanPlate(value);
+
+      if (verifiedRegistrationNumber && nextPlate !== verifiedRegistrationNumber) {
+        setVerifiedVehicle(null);
+        setVerifiedRegistrationNumber('');
+      }
+    }
+
     setForm((current) => ({
       ...current,
       [field]: value,
@@ -331,6 +382,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
 
   const resetForm = () => {
     setForm(initialForm);
+    setVerifiedVehicle(null);
+    setVerifiedRegistrationNumber('');
     setLocalError('');
     setSuccess('');
   };
@@ -338,6 +391,10 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
   const validateForm = () => {
     if (!cleanPlate(form.registrationNumber)) {
       return 'Vehicle registration number is required.';
+    }
+
+    if (!isVehicleVerified) {
+      return 'Please verify this vehicle from BRTA before registering it in STVES.';
     }
 
     if (!form.brand.trim()) {
@@ -357,6 +414,48 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
     }
 
     return '';
+  };
+
+  const handleVerifyVehicleRegistration = async () => {
+    const registrationNumber = cleanPlate(form.registrationNumber);
+
+    setLocalError('');
+    setSuccess('');
+
+    if (!registrationNumber) {
+      setLocalError('Vehicle registration number is required.');
+      return;
+    }
+
+    if (typeof api.verifyOwnerVehicleForRegistration !== 'function') {
+      setLocalError('Vehicle verification API function not found in api.js.');
+      return;
+    }
+
+    try {
+      setVerifyingVehicle(true);
+
+      const response = await api.verifyOwnerVehicleForRegistration(registrationNumber);
+      const vehicle = response?.vehicle || response?.data?.vehicle || null;
+
+      if (!vehicle) {
+        throw new Error('BRTA vehicle information was not returned.');
+      }
+
+      const nextForm = buildFormFromVerifiedVehicle(vehicle);
+
+      setForm(nextForm);
+      setVerifiedVehicle(vehicle);
+      setVerifiedRegistrationNumber(cleanPlate(nextForm.registrationNumber));
+      setSuccess('Vehicle verified from BRTA. Official details have been auto-filled and locked.');
+    } catch (err) {
+      console.error('Vehicle verification failed:', err);
+      setVerifiedVehicle(null);
+      setVerifiedRegistrationNumber('');
+      setLocalError(err.message || 'Vehicle verification failed.');
+    } finally {
+      setVerifyingVehicle(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -515,18 +614,53 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
 
           <form onSubmit={handleSubmit} className="my-vehicles-form space-y-5">
             <div className="my-vehicles-form-grid grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <FormInput
-                label="Registration Number *"
-                value={form.registrationNumber}
-                onChange={(value) => setField('registrationNumber', value)}
-                placeholder="SYL-METRO-GA-11-1234"
-              />
+              <div className="my-vehicles-form-group lg:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Registration Number *
+                </label>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="text"
+                    value={form.registrationNumber}
+                    onChange={(event) => setField('registrationNumber', event.target.value)}
+                    placeholder="SYL-METRO-GA-11-1234"
+                    disabled={submitting || verifyingVehicle}
+                    className="my-vehicles-input w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81] disabled:bg-gray-50 disabled:text-gray-500"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleVerifyVehicleRegistration}
+                    disabled={submitting || verifyingVehicle || !cleanPlate(form.registrationNumber)}
+                    className="rounded-xl bg-[#0f4c81] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0d3d67] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:w-52"
+                  >
+                    {verifyingVehicle ? (
+                      <Loader2 size={17} className="animate-spin" />
+                    ) : (
+                      <Shield size={17} />
+                    )}
+                    {verifyingVehicle ? 'Verifying...' : 'Verify & Auto Fill'}
+                  </button>
+                </div>
+
+                {isVehicleVerified ? (
+                  <p className="mt-2 text-xs font-medium text-green-600">
+                    BRTA verified. Official vehicle details are auto-filled and locked.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-gray-400">
+                    Enter your BRTA vehicle registration number, then verify to load official vehicle information.
+                  </p>
+                )}
+              </div>
 
               <FormSelect
                 label="Vehicle Type"
                 value={form.vehicleType}
                 onChange={(value) => setField('vehicleType', value)}
                 options={['car', 'bike', 'bus', 'truck', 'cng', 'microbus']}
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -534,6 +668,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 value={form.brand}
                 onChange={(value) => setField('brand', value)}
                 placeholder="Toyota"
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -541,6 +677,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 value={form.model}
                 onChange={(value) => setField('model', value)}
                 placeholder="Axio"
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -549,6 +687,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 value={form.year}
                 onChange={(value) => setField('year', value)}
                 placeholder="2020"
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -556,6 +696,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 value={form.color}
                 onChange={(value) => setField('color', value)}
                 placeholder="White"
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -563,6 +705,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 value={form.chassisNumber}
                 onChange={(value) => setField('chassisNumber', value)}
                 placeholder="CHS-123456"
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -570,6 +714,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 value={form.engineNumber}
                 onChange={(value) => setField('engineNumber', value)}
                 placeholder="ENG-123456"
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -577,6 +723,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 type="date"
                 value={form.registrationDate}
                 onChange={(value) => setField('registrationDate', value)}
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -584,6 +732,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 type="date"
                 value={form.registrationExpiry}
                 onChange={(value) => setField('registrationExpiry', value)}
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -591,6 +741,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 type="date"
                 value={form.fitnessExpiry}
                 onChange={(value) => setField('fitnessExpiry', value)}
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -598,6 +750,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 type="date"
                 value={form.taxTokenExpiry}
                 onChange={(value) => setField('taxTokenExpiry', value)}
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -605,6 +759,8 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 type="date"
                 value={form.routePermitExpiry}
                 onChange={(value) => setField('routePermitExpiry', value)}
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
 
               <FormInput
@@ -612,16 +768,22 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
                 type="date"
                 value={form.insuranceExpiry}
                 onChange={(value) => setField('insuranceExpiry', value)}
+                readOnly
+                disabled={!isVehicleVerified || submitting}
               />
             </div>
 
             <button
               type="submit"
-              disabled={submitting}
-              className="my-vehicles-submit-button w-full rounded-xl bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] px-5 py-3 text-sm font-semibold text-white hover:shadow-lg active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
+              disabled={submitting || !isVehicleVerified}
+              className="my-vehicles-submit-button w-full rounded-xl bg-gradient-to-r from-[#0f4c81] to-[#1a73e8] px-5 py-3 text-sm font-semibold text-white hover:shadow-lg active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-              {submitting ? 'Registering Vehicle...' : 'Register Vehicle'}
+              {submitting
+                ? 'Registering Vehicle...'
+                : isVehicleVerified
+                  ? 'Register Verified Vehicle'
+                  : 'Verify Vehicle First'}
             </button>
           </form>
         </section>
@@ -853,7 +1015,15 @@ export default function MyVehiclesPage({ onNavigate = () => { } }) {
   );
 }
 
-function FormInput({ label, value, onChange, placeholder, type = 'text' }) {
+function FormInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  readOnly = false,
+  disabled = false,
+}) {
   return (
     <div className="my-vehicles-form-group">
       <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -865,13 +1035,16 @@ function FormInput({ label, value, onChange, placeholder, type = 'text' }) {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="my-vehicles-input w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+        readOnly={readOnly}
+        disabled={disabled}
+        className={`my-vehicles-input w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81] ${disabled || readOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
+          }`}
       />
     </div>
   );
 }
 
-function FormSelect({ label, value, onChange, options }) {
+function FormSelect({ label, value, onChange, options, disabled = false }) {
   return (
     <div className="my-vehicles-form-group">
       <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -881,7 +1054,9 @@ function FormSelect({ label, value, onChange, options }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="my-vehicles-input w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81]"
+        disabled={disabled}
+        className={`my-vehicles-input w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/20 focus:border-[#0f4c81] ${disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
+          }`}
       >
         {options.map((option) => (
           <option key={option} value={option}>

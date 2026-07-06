@@ -28,6 +28,13 @@ router.get(
 );
 
 router.get(
+  "/owner-verify/:plate",
+  protect,
+  authorizeRoles("owner"),
+  vehicleController.verifyOwnerVehicleForRegistration
+);
+
+router.get(
   "/verify/:plate",
   protect,
   authorizeRoles("admin", "police", "owner"),

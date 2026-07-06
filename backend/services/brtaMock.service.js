@@ -512,7 +512,6 @@ const getAllVehicles = async () => {
 const getOwnerVehicles = async (user) => {
   const result = [];
 
-  // Option 1: STVES app vehicle owner relation
   const appVehicles = await Vehicle.find({
     owner: user._id,
   }).lean();
@@ -520,46 +519,37 @@ const getOwnerVehicles = async (user) => {
   for (const appVehicle of appVehicles) {
     const plate = appVehicle.registrationNumber || appVehicle.plateNumber;
 
-    if (!plate) continue;
+    if (!plate) {
+      result.push({
+        ...appVehicle,
+        source: "STVES_APP",
+        appVehicleId: appVehicle._id,
+      });
+      continue;
+    }
 
     const verified = await verifyVehicle({
       registrationNumber: plate,
     });
 
-    if (verified.found) {
+    if (verified?.found && verified.vehicle) {
       result.push({
         ...verified.vehicle,
+        _id: appVehicle._id,
+        id: appVehicle._id,
+        appVehicleId: appVehicle._id,
+        source: "STVES_APP",
+        owner: appVehicle.owner,
+        assignedDrivers: appVehicle.assignedDrivers || [],
+        authorizedDrivers: appVehicle.authorizedDrivers || [],
+        status: appVehicle.status || verified.vehicle.status || "active",
+      });
+    } else {
+      result.push({
+        ...appVehicle,
+        source: "STVES_APP",
         appVehicleId: appVehicle._id,
       });
-    }
-  }
-
-  // Option 2: BRTA owner relation by NID
-  if (user.nid) {
-    const brtaOwner = await BrtaOwner.findOne({
-      nid: user.nid,
-    }).lean();
-
-    if (brtaOwner?.brtaOwnerId) {
-      const brtaVehicles = await BrtaVehicle.find({
-        brtaOwnerId: brtaOwner.brtaOwnerId,
-      }).lean();
-
-      for (const vehicle of brtaVehicles) {
-        const alreadyExists = result.some(
-          (item) => item.registrationNumber === vehicle.registrationNumber
-        );
-
-        if (alreadyExists) continue;
-
-        const verified = await verifyVehicle({
-          registrationNumber: vehicle.registrationNumber,
-        });
-
-        if (verified.found) {
-          result.push(verified.vehicle);
-        }
-      }
     }
   }
 

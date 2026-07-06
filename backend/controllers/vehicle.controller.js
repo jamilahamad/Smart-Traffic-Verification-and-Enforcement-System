@@ -171,6 +171,136 @@ const validateOwnerVehicleAgainstBrta = async ({ payload, registrationNumber, us
   };
 };
 
+const buildOwnerVehicleRegistrationDraft = ({ brtaVehicle, brtaDocuments }) => {
+  const registrationNumber = normalizePlate(brtaVehicle.registrationNumber);
+
+  return {
+    registrationNumber,
+    vehicleType: normalizeVehicleTypeForApp(brtaVehicle.vehicleType),
+    brand: brtaVehicle.brand || "",
+    model: brtaVehicle.model || "",
+    year: brtaVehicle.year || "",
+    color: brtaVehicle.color || "",
+
+    chassisNumber: brtaVehicle.chassisNumber || "",
+    engineNumber: brtaVehicle.engineNumber || "",
+
+    registrationDate: brtaVehicle.registrationDate || "",
+    registrationExpiry:
+      brtaVehicle.registrationExpiry ||
+      getExpiryDate(brtaDocuments?.registrationCertificate) ||
+      "",
+
+    fitnessExpiry: getExpiryDate(brtaDocuments?.fitnessCertificate) || "",
+    taxTokenExpiry: getExpiryDate(brtaDocuments?.taxToken) || "",
+    insuranceExpiry: getExpiryDate(brtaDocuments?.insurance) || "",
+    routePermitExpiry: getExpiryDate(brtaDocuments?.routePermit) || "",
+
+    qrCode: brtaVehicle.qrCode || buildVehicleQR(registrationNumber),
+    status: brtaVehicle.status || "active",
+    source: "BRTA_MOCK",
+    locked: true,
+  };
+};
+
+const verifyOwnerVehicleForRegistration = asyncHandler(async (req, res) => {
+  const registrationNumber = normalizePlate(
+    req.params.plate || req.params.registrationNumber || req.query.registrationNumber
+  );
+
+  if (!registrationNumber) {
+    throw new AppError("Vehicle registration number is required.", 400);
+  }
+
+  const brtaVehicle = await BrtaVehicle.findOne({
+    registrationNumber,
+  }).lean();
+
+  if (!brtaVehicle) {
+    throw new AppError(
+      "Vehicle not found in BRTA registry. You can only register a BRTA-verified vehicle.",
+      404
+    );
+  }
+
+  if (["suspended", "blacklisted"].includes(String(brtaVehicle.status || "").toLowerCase())) {
+    throw new AppError(
+      `This vehicle is ${brtaVehicle.status} in BRTA registry and cannot be registered.`,
+      403
+    );
+  }
+
+  const brtaOwner = brtaVehicle.brtaOwnerId
+    ? await BrtaOwner.findOne({ brtaOwnerId: brtaVehicle.brtaOwnerId }).lean()
+    : null;
+
+  if (!brtaOwner) {
+    throw new AppError("BRTA owner record was not found for this vehicle.", 404);
+  }
+
+  if (brtaOwner.status && String(brtaOwner.status).toLowerCase() !== "active") {
+    throw new AppError(
+      `This BRTA owner record is ${brtaOwner.status}. Vehicle registration is not allowed.`,
+      403
+    );
+  }
+
+  const userNid = normalizeText(req.user?.nid);
+  const userBrtaOwnerId = normalizeText(req.user?.brtaOwnerId);
+  const brtaOwnerNid = normalizeText(brtaOwner?.nid);
+  const brtaOwnerId = normalizeText(brtaOwner?.brtaOwnerId);
+
+  const ownerIdMatches =
+    userBrtaOwnerId && brtaOwnerId && userBrtaOwnerId === brtaOwnerId;
+
+  const ownerNidMatches =
+    userNid && brtaOwnerNid && userNid === brtaOwnerNid;
+
+  if (!ownerIdMatches && !ownerNidMatches) {
+    throw new AppError(
+      "This vehicle is not linked with your BRTA owner profile.",
+      403
+    );
+  }
+
+  const existingVehicle = await Vehicle.findOne({
+    registrationNumber,
+  }).lean();
+
+  if (existingVehicle) {
+    if (String(existingVehicle.owner) === String(req.user._id)) {
+      throw new AppError(
+        "This vehicle is already registered in your STVES account.",
+        409
+      );
+    }
+
+    throw new AppError(
+      "This vehicle is already registered in STVES by another owner.",
+      409
+    );
+  }
+
+  const brtaDocuments = await brtaMockService.getUnifiedVehicleDocuments(
+    registrationNumber
+  );
+
+  const vehicle = buildOwnerVehicleRegistrationDraft({
+    brtaVehicle,
+    brtaDocuments,
+  });
+
+  return sendSuccess(res, 200, "Vehicle verified from BRTA. Official details loaded.", {
+    vehicle,
+    owner: {
+      brtaOwnerId: brtaOwner.brtaOwnerId,
+      name: brtaOwner.name,
+      nid: brtaOwner.nid,
+    },
+    isOwnerMatched: true,
+  });
+});
+
 const createVehicle = asyncHandler(async (req, res) => {
   const payload = req.body;
 
@@ -441,6 +571,7 @@ module.exports = {
   getVehicles,
   getMyVehicles,
   verifyVehicle,
+  verifyOwnerVehicleForRegistration,
   createVehicle,
   updateVehicle,
   updateVehicleStatus,
