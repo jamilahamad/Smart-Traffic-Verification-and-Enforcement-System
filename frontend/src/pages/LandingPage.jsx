@@ -147,22 +147,9 @@ const processSteps = [
   },
 ];
 
-export default function LandingPage({ onLogin, onVerify }) {
+export default function LandingPage({ onLogin }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const handleAuthOpen = () => {
-    if (typeof onLogin === 'function') {
-      onLogin();
-    }
-  };
-
-  const handlePublicVerify = () => {
-    setMobileMenuOpen(false);
-
-    if (typeof onVerify === 'function') {
-      onVerify();
-      return;
-    }
-
     if (typeof onLogin === 'function') {
       onLogin();
     }
@@ -194,13 +181,6 @@ export default function LandingPage({ onLogin, onVerify }) {
                 </a>
               ))}
 
-              <button
-                type="button"
-                onClick={handlePublicVerify}
-                className="landing-nav-link rounded-xl px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-blue-50 hover:text-[#0f4c81]"
-              >
-                Public Verify
-              </button>
             </div>
 
             <div className="landing-nav-actions hidden items-center gap-3 md:flex">
@@ -236,14 +216,6 @@ export default function LandingPage({ onLogin, onVerify }) {
                   {item.label}
                 </a>
               ))}
-
-              <button
-                type="button"
-                onClick={handlePublicVerify}
-                className="mt-1 block w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-[#0f4c81]"
-              >
-                Public Verify
-              </button>
 
               <button
                 type="button"
