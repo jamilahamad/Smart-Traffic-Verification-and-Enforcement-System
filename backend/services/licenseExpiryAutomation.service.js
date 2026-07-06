@@ -7,6 +7,11 @@ const LicenseRenewalRequest = require("../models/LicenseRenewalRequest");
 const AppError = require("../utils/AppError");
 const generateCaseId = require("../utils/generateCaseId");
 const { normalizeLicense } = require("../utils/qr");
+const {
+  emitNotificationToUser,
+  emitNotificationUpdatedToUser,
+  emitNotificationsReadAllToUser,
+} = require("./realtime.service");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -102,26 +107,34 @@ const createNotificationOnce = async ({
     return null;
   }
 
-  return Notification.findOneAndUpdate(
-    { dedupeKey },
-    {
-      $setOnInsert: {
-        recipient,
-        type,
-        title,
-        message,
-        severity,
-        link,
-        metadata,
-        dedupeKey,
-      },
-    },
-    {
-      upsert: true,
-      new: true,
-      setDefaultsOnInsert: true,
+  const existingNotification = await Notification.findOne({ dedupeKey }).lean();
+
+  if (existingNotification) {
+    return existingNotification;
+  }
+
+  try {
+    const notification = await Notification.create({
+      recipient,
+      type,
+      title,
+      message,
+      severity,
+      link,
+      metadata,
+      dedupeKey,
+    });
+
+    emitNotificationToUser(notification);
+
+    return notification;
+  } catch (error) {
+    if (error?.code === 11000) {
+      return Notification.findOne({ dedupeKey }).lean();
     }
-  );
+
+    throw error;
+  }
 };
 
 const getSystemReviewer = async () => {
@@ -625,7 +638,7 @@ const getMyNotifications = async (user, { limit = 20 } = {}) => {
 };
 
 const markNotificationRead = async (user, notificationId) => {
-  return Notification.findOneAndUpdate(
+  const notification = await Notification.findOneAndUpdate(
     {
       _id: notificationId,
       recipient: user._id,
@@ -637,9 +650,15 @@ const markNotificationRead = async (user, notificationId) => {
       },
     },
     {
-      new: true,
+      returnDocument: "after",
     }
   ).lean();
+
+  if (notification) {
+    emitNotificationUpdatedToUser(notification);
+  }
+
+  return notification;
 };
 
 const markAllNotificationsRead = async (user) => {
@@ -655,6 +674,10 @@ const markAllNotificationsRead = async (user) => {
       },
     }
   );
+
+  if ((result.modifiedCount || 0) > 0) {
+    emitNotificationsReadAllToUser(user._id);
+  }
 
   return {
     modifiedCount: result.modifiedCount || 0,

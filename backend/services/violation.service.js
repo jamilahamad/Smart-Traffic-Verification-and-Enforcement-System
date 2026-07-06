@@ -21,6 +21,7 @@ const { normalizePlate, normalizeLicense } = require("../utils/qr");
 
 const brtaMockService = require("./brtaMock.service");
 const brtaLicenseService = require("./brtaLicense.service");
+const notificationService = require("./notification.service");
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -614,6 +615,11 @@ const createViolation = async (payload, officer) => {
     issuedAt: new Date(),
   });
 
+  notificationService.dispatchNotificationTask(
+    notificationService.notifyEChallanCreated(violation),
+    "create e-challan notification"
+  );
+
   return violation;
 };
 
@@ -742,7 +748,7 @@ const updateViolationStatus = async ({ id, status, note, admin }) => {
         paidAt: new Date(),
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     )
       .populate("vehicle", "registrationNumber brand model color vehicleType")
@@ -754,6 +760,11 @@ const updateViolationStatus = async ({ id, status, note, admin }) => {
     if (!violation) {
       throw new AppError("Violation not found.", 404);
     }
+
+    notificationService.dispatchNotificationTask(
+      notificationService.notifyViolationPaid(violation, { paidBy: user }),
+      "violation payment notification"
+    );
 
     return violation;
   }
@@ -779,7 +790,7 @@ const updateViolationStatus = async ({ id, status, note, admin }) => {
   }
 
   const violation = await Violation.findByIdAndUpdate(id, update, {
-    new: true,
+    returnDocument: "after",
   })
     .populate("vehicle", "registrationNumber brand model color vehicleType")
     .populate("driver", "name email role phone")
@@ -790,6 +801,14 @@ const updateViolationStatus = async ({ id, status, note, admin }) => {
   if (!violation) {
     throw new AppError("Violation not found.", 404);
   }
+
+  notificationService.dispatchNotificationTask(
+    notificationService.notifyEChallanReviewed(violation, {
+      status: normalizedStatus,
+      admin: user,
+    }),
+    "e-challan review notification"
+  );
 
   return violation;
 };

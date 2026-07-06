@@ -443,7 +443,7 @@ const updateUser = async (id, payload, actor = {}) => {
   }
 
   const updatedUser = await User.findByIdAndUpdate(id, updateCommand, {
-    new: true,
+    returnDocument: "after",
     runValidators: true,
   }).lean();
 

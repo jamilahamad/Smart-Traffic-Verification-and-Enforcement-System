@@ -389,7 +389,7 @@ const updateViolationType = async (id, payload = {}, actor) => {
   const updated = await ViolationType.findByIdAndUpdate(
     id,
     { $set: update },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   ).lean();
 
   return {
@@ -426,7 +426,7 @@ const softDeleteViolationType = async (id, actor) => {
         updatedBy: actor?._id,
       },
     },
-    { new: true }
+    { returnDocument: "after" }
   ).lean();
 
   return {

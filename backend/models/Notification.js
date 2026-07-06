@@ -15,6 +15,14 @@ const notificationSchema = new mongoose.Schema(
         "license_expiry_reminder",
         "license_expired",
         "auto_violation_created",
+        "case_created",
+        "case_reviewed",
+        "payment_completed",
+        "assignment_request",
+        "assignment_activated",
+        "assignment_accepted",
+        "assignment_rejected",
+        "assignment_removed",
         "system",
       ],
       default: "system",
@@ -61,6 +69,17 @@ const notificationSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "Violation",
       },
+      assignment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Assignment",
+      },
+
+      vehicle: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Vehicle",
+      },
+
+      registrationNumber: String,
       licenseNumber: String,
       ruleCode: String,
       dueDate: Date,

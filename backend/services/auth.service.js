@@ -897,7 +897,7 @@ const updateCurrentUser = async (userId, payload = {}) => {
   const updatedUser = await User.findByIdAndUpdate(
     userId,
     { $set: update },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   return sanitizeUser(updatedUser);

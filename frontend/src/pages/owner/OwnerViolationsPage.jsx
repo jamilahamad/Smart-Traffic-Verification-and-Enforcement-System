@@ -634,7 +634,9 @@ export default function OwnerViolationsPage() {
       await api.updatePayment(violationId, 'paid');
 
       if (typeof fetchDashboardData === 'function') {
-        await fetchDashboardData();
+        fetchDashboardData().catch((error) => {
+          console.error('Failed to refresh dashboard data after owner payment:', error);
+        });
       }
 
       if (typeof addLog === 'function' && currentUser) {
