@@ -299,6 +299,9 @@ const api = {
       body: { status },
     }),
 
+  verifyOwnerVehicleForRegistration: (registrationNumber) =>
+    request(`/vehicles/owner-verify/${encodeURIComponent(registrationNumber)}`),
+
   verifyVehicle: (registrationNumber, licenseNumber = '') =>
     request(`/vehicles/verify/${encodeURIComponent(registrationNumber)}`, {
       params: {

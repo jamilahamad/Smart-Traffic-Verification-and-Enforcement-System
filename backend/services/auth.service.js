@@ -455,7 +455,7 @@ const requestRegistrationOtp = async (payload) => {
       },
     },
     {
-      new: true,
+      returnDocument: "after",
       upsert: true,
       runValidators: true,
       setDefaultsOnInsert: true,
@@ -578,7 +578,7 @@ const requestPasswordResetOtp = async (payload = {}) => {
       },
     },
     {
-      new: true,
+      returnDocument: "after",
       upsert: true,
       runValidators: true,
       setDefaultsOnInsert: true,
