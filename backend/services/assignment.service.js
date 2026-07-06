@@ -14,6 +14,7 @@ const BrtaDriverVehicleAuthorization = require("../models/BrtaDriverVehicleAutho
 
 const AppError = require("../utils/AppError");
 const { normalizePlate, normalizeLicense } = require("../utils/qr");
+const notificationService = require("./notification.service");
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -694,6 +695,11 @@ const createAssignment = async (payload, user) => {
     Assignment.findById(assignment._id)
   ).lean();
 
+  notificationService.dispatchNotificationTask(
+    notificationService.notifyAssignmentCreated(populated, { createdBy: user }),
+    "assignment created notification"
+  );
+
   return {
     assignment: populated,
     alreadyExists: false,
@@ -1031,7 +1037,7 @@ const removeAssignment = async ({ id, reason, user }) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: false,
       }
     )
@@ -1052,6 +1058,11 @@ const removeAssignment = async ({ id, reason, user }) => {
       }
     );
   }
+
+  notificationService.dispatchNotificationTask(
+    notificationService.notifyAssignmentRemoved(updatedAssignment, { removedBy: user }),
+    "assignment removed notification"
+  );
 
   return updatedAssignment;
 };
@@ -1203,7 +1214,19 @@ const respondToAssignmentRequest = async ({ assignmentId, action, responseNote }
     assignment.driverResponseNote = responseNote || "";
     await assignment.save();
 
-    return populateAssignment(Assignment.findById(assignment._id)).lean();
+    const populatedRejectedAssignment = await populateAssignment(
+      Assignment.findById(assignment._id)
+    ).lean();
+
+    notificationService.dispatchNotificationTask(
+      notificationService.notifyAssignmentResponded(populatedRejectedAssignment, {
+        driver: user,
+        action: cleanAction,
+      }),
+      "assignment rejected notification"
+    );
+
+    return populatedRejectedAssignment;
   }
 
   assignment.status = "active";
@@ -1236,7 +1259,19 @@ const respondToAssignmentRequest = async ({ assignmentId, action, responseNote }
     );
   }
 
-  return populateAssignment(Assignment.findById(assignment._id)).lean();
+  const populatedAcceptedAssignment = await populateAssignment(
+    Assignment.findById(assignment._id)
+  ).lean();
+
+  notificationService.dispatchNotificationTask(
+    notificationService.notifyAssignmentResponded(populatedAcceptedAssignment, {
+      driver: user,
+      action: cleanAction,
+    }),
+    "assignment accepted notification"
+  );
+
+  return populatedAcceptedAssignment;
 };
 
 module.exports = {

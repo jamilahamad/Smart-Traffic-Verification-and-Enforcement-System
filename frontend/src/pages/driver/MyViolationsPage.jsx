@@ -729,7 +729,9 @@ export default function MyViolationsPage() {
       await loadDriverViolations();
 
       if (typeof fetchDashboardData === 'function') {
-        await fetchDashboardData();
+        fetchDashboardData().catch((error) => {
+          console.error('Failed to refresh dashboard data after driver payment:', error);
+        });
       }
 
       if (typeof addLog === 'function' && currentUser) {

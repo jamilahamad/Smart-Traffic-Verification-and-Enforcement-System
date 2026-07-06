@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Bell,
@@ -17,6 +17,10 @@ import {
 import UserAvatar from '../common/UserAvatar';
 import api from '../../lib/api';
 import useStore from '../../store/useStore';
+import {
+  connectNotificationSocket,
+  disconnectNotificationSocket,
+} from '../../lib/realtime';
 
 const roleLabels = {
   admin: 'System Administrator',
@@ -108,6 +112,35 @@ const normalizeNotificationLink = (link = '') => {
   return aliases[cleanLink] || cleanLink;
 };
 
+const sortNotificationsByTime = (items = []) => {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a?.createdAt || 0).getTime();
+    const bTime = new Date(b?.createdAt || 0).getTime();
+
+    return bTime - aTime;
+  });
+};
+
+const upsertNotification = (items = [], notification) => {
+  if (!notification) {
+    return items;
+  }
+
+  const notificationId = getId(notification);
+
+  const filteredItems = items.filter((item) => {
+    const itemId = getId(item);
+
+    if (notificationId && itemId) {
+      return itemId !== notificationId;
+    }
+
+    return item?.dedupeKey !== notification?.dedupeKey;
+  });
+
+  return sortNotificationsByTime([notification, ...filteredItems]).slice(0, 20);
+};
+
 export default function Navbar({
   onToggleSidebar,
   sidebarOpen = false,
@@ -116,11 +149,29 @@ export default function Navbar({
   const currentUser = useStore((state) => state.currentUser);
   const logout = useStore((state) => state.logout);
   const violations = useStore((state) => state.violations || []);
+  const fetchDashboardData = useStore((state) => state.fetchDashboardData);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const dashboardRefreshTimerRef = useRef(null);
+  const lastNotificationFetchRef = useRef(0);
+
+  const refreshDashboardDataAfterNotification = useCallback(() => {
+    if (dashboardRefreshTimerRef.current) {
+      window.clearTimeout(dashboardRefreshTimerRef.current);
+    }
+
+    dashboardRefreshTimerRef.current = window.setTimeout(() => {
+      if (typeof fetchDashboardData === 'function') {
+        fetchDashboardData().catch((error) => {
+          console.error('Failed to refresh dashboard data after realtime notification:', error);
+        });
+      }
+    }, 350);
+  }, [fetchDashboardData]);
 
   const role = currentUser?.role || 'driver';
   const isAdmin = role === 'admin';
@@ -157,33 +208,132 @@ export default function Navbar({
     return items;
   }, [notifications, isAdmin, pendingCases]);
 
-  const loadNotifications = async () => {
+  const loadNotifications = async ({ silent = false, force = false } = {}) => {
     if (!currentUser || typeof api.getMyNotifications !== 'function') {
       return;
     }
 
-    setNotificationsLoading(true);
+    const now = Date.now();
+
+    if (!force && lastNotificationFetchRef.current) {
+      const diffMs = now - lastNotificationFetchRef.current;
+
+      if (diffMs < 15000) {
+        return;
+      }
+    }
+
+    if (!silent) {
+      setNotificationsLoading(true);
+    }
 
     try {
       const response = await api.getMyNotifications(20);
       setNotifications(extractNotifications(response));
+      lastNotificationFetchRef.current = Date.now();
     } catch (error) {
       console.error('Failed to load notifications:', error);
       setNotifications([]);
     } finally {
-      setNotificationsLoading(false);
+      if (!silent) {
+        setNotificationsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadNotifications();
+    loadNotifications({ silent: true, force: true });
 
     const intervalId = window.setInterval(() => {
-      loadNotifications();
+      loadNotifications({ silent: true, force: true });
     }, 60000);
 
     return () => window.clearInterval(intervalId);
   }, [currentUser?._id, currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser?._id && !currentUser?.id) {
+      disconnectNotificationSocket();
+      return undefined;
+    }
+
+    const socket = connectNotificationSocket();
+
+    if (!socket) {
+      return undefined;
+    }
+
+    const handleNewNotification = (payload = {}) => {
+      const notification = payload.notification || payload.data?.notification;
+
+      if (!notification) {
+        return;
+      }
+
+      setNotifications((previous) => upsertNotification(previous, notification));
+      refreshDashboardDataAfterNotification();
+    };
+
+    const handleUpdatedNotification = (payload = {}) => {
+      const notification = payload.notification || payload.data?.notification;
+
+      if (!notification) {
+        return;
+      }
+
+      setNotifications((previous) => upsertNotification(previous, notification));
+
+      const notificationType = String(notification.type || '').toLowerCase();
+
+      if (
+        [
+          'case_created',
+          'case_reviewed',
+          'payment_completed',
+          'assignment_request',
+          'assignment_activated',
+          'assignment_accepted',
+          'assignment_rejected',
+          'assignment_removed',
+          'auto_violation_created',
+          'license_expiry_reminder',
+          'license_expired',
+        ].includes(notificationType)
+      ) {
+        refreshDashboardDataAfterNotification();
+      }
+    };
+
+    const handleReadAllNotifications = (payload = {}) => {
+      const readAt = payload.readAt || new Date().toISOString();
+
+      setNotifications((previous) =>
+        previous.map((notification) => ({
+          ...notification,
+          status: 'read',
+          readAt,
+        }))
+      );
+    };
+
+    socket.on('notification:new', handleNewNotification);
+    socket.on('notification:updated', handleUpdatedNotification);
+    socket.on('notifications:read-all', handleReadAllNotifications);
+
+    return () => {
+      socket.off('notification:new', handleNewNotification);
+      socket.off('notification:updated', handleUpdatedNotification);
+      socket.off('notifications:read-all', handleReadAllNotifications);
+    };
+  }, [currentUser?._id, currentUser?.id, refreshDashboardDataAfterNotification]);
+
+  useEffect(() => {
+    return () => {
+      if (dashboardRefreshTimerRef.current) {
+        window.clearTimeout(dashboardRefreshTimerRef.current);
+      }
+    };
+  }, []);
 
   const closeMenus = () => {
     setDropdownOpen(false);
@@ -243,6 +393,7 @@ export default function Navbar({
   };
 
   const handleLogout = () => {
+    disconnectNotificationSocket();
     logout();
     closeMenus();
   };
@@ -290,7 +441,16 @@ export default function Navbar({
                 setDropdownOpen(false);
 
                 if (!notifOpen) {
-                  loadNotifications();
+                  const shouldReloadNotifications =
+                    notifications.length === 0 ||
+                    Date.now() - lastNotificationFetchRef.current > 30000;
+
+                  if (shouldReloadNotifications) {
+                    loadNotifications({
+                      silent: notifications.length > 0,
+                      force: true,
+                    });
+                  }
                 }
               }}
               className="stves-navbar-icon-button p-2 rounded-lg hover:bg-gray-100 relative"
@@ -323,7 +483,7 @@ export default function Navbar({
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={loadNotifications}
+                      onClick={() => loadNotifications({ force: true })}
                       disabled={notificationsLoading}
                       className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 disabled:opacity-50"
                       title="Refresh notifications"

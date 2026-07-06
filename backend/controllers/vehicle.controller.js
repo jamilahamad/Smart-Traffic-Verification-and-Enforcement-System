@@ -405,7 +405,7 @@ const updateVehicle = asyncHandler(async (req, res) => {
   }
 
   const updatedVehicle = await Vehicle.findByIdAndUpdate(req.params.id, payload, {
-    new: true,
+    returnDocument: "after",
     runValidators: true,
   }).populate("owner", "name email phone role");
 
@@ -445,7 +445,7 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: false,
       }
     );
@@ -461,7 +461,7 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: false,
       }
     );
@@ -481,7 +481,7 @@ const updateVehicleStatus = asyncHandler(async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: false,
       }
     );

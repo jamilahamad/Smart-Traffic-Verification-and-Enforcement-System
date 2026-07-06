@@ -517,7 +517,9 @@ export default function CreateCasePage({ verificationResult: verificationResultP
       }
 
       if (typeof fetchDashboardData === 'function') {
-        await fetchDashboardData();
+        fetchDashboardData().catch((error) => {
+          console.error('Failed to refresh dashboard data after E-Challan creation:', error);
+        });
       }
 
       if (currentUser && typeof addLog === 'function') {
@@ -747,8 +749,8 @@ export default function CreateCasePage({ verificationResult: verificationResultP
                   <label
                     key={violationType.id || violationType.code}
                     className={`create-case-violation-option flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer ${selected
-                        ? 'border-red-400 bg-red-50'
-                        : 'border-gray-100 hover:border-gray-200'
+                      ? 'border-red-400 bg-red-50'
+                      : 'border-gray-100 hover:border-gray-200'
                       }`}
                   >
                     <input
@@ -899,8 +901,8 @@ export default function CreateCasePage({ verificationResult: verificationResultP
           type="submit"
           disabled={submitDisabled}
           className={`create-case-submit-button w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm ${submitDisabled
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg active:scale-[0.98]'
+            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg active:scale-[0.98]'
             }`}
         >
           {submitting ? (

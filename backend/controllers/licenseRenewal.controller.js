@@ -8,6 +8,7 @@ const Notification = require("../models/Notification");
 const LicenseRenewalRequest = require("../models/LicenseRenewalRequest");
 
 const { normalizeLicense } = require("../utils/qr");
+const { emitNotificationToUser } = require("../services/realtime.service");
 
 const isFutureDate = (value) => {
   const date = new Date(value);
@@ -57,14 +58,29 @@ const createNotification = async ({
   };
 
   if (dedupeKey) {
-    return Notification.findOneAndUpdate(
-      { dedupeKey },
-      { $setOnInsert: payload },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const existingNotification = await Notification.findOne({ dedupeKey }).lean();
+
+    if (existingNotification) {
+      return existingNotification;
+    }
+
+    try {
+      const notification = await Notification.create(payload);
+      emitNotificationToUser(notification);
+      return notification;
+    } catch (error) {
+      if (error?.code === 11000) {
+        return Notification.findOne({ dedupeKey }).lean();
+      }
+
+      throw error;
+    }
   }
 
-  return Notification.create(payload);
+  const notification = await Notification.create(payload);
+  emitNotificationToUser(notification);
+
+  return notification;
 };
 
 const submitRenewalProof = asyncHandler(async (req, res) => {
@@ -267,7 +283,7 @@ const reviewRenewalRequest = asyncHandler(async (req, res) => {
           },
         },
         {
-          new: true,
+          returnDocument: "after",
         }
       ),
     ]);
