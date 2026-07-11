@@ -739,6 +739,15 @@ const updateViolationStatus = async ({ id, status, note, admin }) => {
       throw new AppError("Pending case must be approved before payment.", 400);
     }
 
+    if (
+      existingViolation.status === "paid" ||
+      existingViolation.paymentStatus === "paid" ||
+      existingViolation.paidAt ||
+      existingViolation.paymentDate
+    ) {
+      throw new AppError("Violation is already paid.", 409);
+    }
+
     const violation = await Violation.findByIdAndUpdate(
       id,
       {
